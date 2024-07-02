@@ -9,7 +9,5 @@ export function validateMd5(hash) {
 }
 
 export function error(errData) {
-  return (async () => {
-    return errData
-  })()
+  return Promise.reject(errData)
 }

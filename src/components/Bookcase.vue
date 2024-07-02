@@ -1,6 +1,6 @@
 <template>
   <div id="book-list">
-    <van-grid column-num="3">
+    <van-grid column-num="3" :border=false>
       <van-grid-item icon="photo-o" text="文字">
         <div class="upload-book-btn">
           <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
@@ -38,7 +38,7 @@
 <script>
 import Epub from 'epubjs'
 import Md5 from 'blueimp-md5'
-import DB from '../db/bookCase.js'
+import DB from '../db/bookcase.js'
 import { reactive } from 'vue'
 import { showLoadingToast } from 'vant'
 let books = reactive([])
@@ -163,6 +163,7 @@ export default {
 
 <style>
 #book-list {
+  padding: 1rem;
   font-size: 12px;
 }
 .upload-book-btn {

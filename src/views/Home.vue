@@ -3,7 +3,11 @@ import Bookcase from '../components/Bookcase.vue'
 </script>
 
 <template>
-  <main>
+  <main class="bookcase">
     <Bookcase></Bookcase>
   </main>
 </template>
+<style scoped>
+.bookcase {
+}
+</style>

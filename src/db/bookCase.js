@@ -1,5 +1,6 @@
 import Dexie from 'dexie'
 import { error, validateMd5 } from './utils.js'
+export const acceptFileFormat = ['application/epub+zip', 'application/epub']
 const originDb = new Dexie('bookcase')
 let stored = false
 const db = new Proxy(originDb, {
@@ -40,7 +41,6 @@ function getBookMeta(hash) {
 function listBookMeta() {
   return db.bookMeta.orderBy('id').toArray()
 }
-
 function putBookContent(bookContent) {
   if (!bookContent) {
     return error('invalid bookContent is null')
@@ -51,8 +51,10 @@ function putBookContent(bookContent) {
   if (bookContent.content.length < 10) {
     return error('invalid bookContent.content')
   }
-  if (bookContent.format !== 'application/epub+zip') {
-    return error('invalid bookContent.format')
+  if (acceptFileFormat.indexOf(bookContent.format) < 0) {
+    return error(
+      `invalid bookContent.format=${bookContent.format} only support ${acceptFileFormat.toString()}`
+    )
   }
   bookContent.utime = now()
   console.dir({ ...bookContent, content: `...+${bookContent.content.length}more` })
