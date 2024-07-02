@@ -82,14 +82,22 @@ async function renderBook() {
       'mix-blend-mode': 'multiply'
     }
   })
+  rendition.on('markClicked',(cfiRange)=>{
+    // rendition.annotations.hide(cfiRange)
+    rendition.annotations.remove(cfiRange)
+    // rendition.manager.views.forEach(item=>{
+    //     item.unhighlight(cfiRange)
+    //   })
+  })
   rendition.on('selected', (cfiRange, contents) => {
-    rendition.annotations.highlight(cfiRange, {}, (e) => {
-      rendition.annotations.unhighlight(cfiRange)
-    })
+    rendition.annotations.highlight(cfiRange, {})
     contents.window.getSelection().removeAllRanges()
     ebook.getRange(cfiRange).then((range) => {
-      const txt = range ?range.toString():""
-      const exist = markList.filter(item=>{return item.txt===txt})
+      const txt = range ?range.toString().trim():""
+      if (!txt){
+        return
+      }
+      const exist = markList  .filter(item=>{return item.txt===txt})
       if(!exist.length){
         markList.push({href:cfiRange,txt:txt,num:1})
       }else{
