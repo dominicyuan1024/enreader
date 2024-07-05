@@ -1,6 +1,6 @@
 import Dexie from 'dexie'
 import { error, validateMd5 } from './utils.js'
-export const acceptFileFormat = ['application/epub+zip', 'application/epub']
+export const acceptFileFormat = ['application/epub+zip', 'application/epub',".mdx"]
 const originDb = new Dexie('bookcase')
 let stored = false
 const db = new Proxy(originDb, {
@@ -8,7 +8,8 @@ const db = new Proxy(originDb, {
     if (!stored) {
       target.version(1).stores({
         bookMeta: '++id, &hash, hashAlg, title, author, cover, progress, utime',
-        bookContent: '++id, &hash, content, filename, format, size, utime'
+        bookContent: '++id, &hash, content, filename, format, size, utime',
+        dictMeta: '++id, &hash, hashAlg, title, using, utime'
       })
       stored = true
     }
@@ -26,7 +27,6 @@ function putBookMeta(bookMeta) {
     return error('invalid bookMeta.hash')
   }
   if (bookMeta.hashAlg != 'md5') {
-    bookMeta.hashAlg = 'bookMeta.hashAlg'
     return error('invalid bookMeta.hash')
   }
   bookMeta.utime = now()
@@ -41,6 +41,30 @@ function getBookMeta(hash) {
 function listBookMeta() {
   return db.bookMeta.orderBy('id').toArray()
 }
+
+function putDictMeta(dictMeta) {
+  if (!dictMeta) {
+    return error('invalid dictMeta is null')
+  }
+  if (!validateMd5(dictMeta.hash)) {
+    return error('invalid dictMeta.hash')
+  }
+  if (dictMeta.hashAlg != 'md5') {
+    return error('invalid dictMeta.hash')
+  }
+  dictMeta.utime = now()
+  console.dir(dictMeta)
+  return db.dictMeta.put(dictMeta)
+}
+
+function getDictMeta(hash) {
+  return db.bookMeta.get({ hash })
+}
+
+function listDictMeta() {
+  return db.dictMeta.orderBy('id').toArray()
+}
+
 function putBookContent(bookContent) {
   if (!bookContent) {
     return error('invalid bookContent is null')
@@ -115,5 +139,8 @@ export default {
   putBookCfi,
   putBookPercentage,
   getBookCfi,
-  getBookPercentage
+  getBookPercentage,
+  putDictMeta,
+  getDictMeta,
+  listDictMeta
 }

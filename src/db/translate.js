@@ -1,7 +1,8 @@
-// import mdict from "mdict-ts-chrome"
-// const translator=new mdict.Mdict()
-// export function lookup(text){
-//   return translator.lookup(text).then(res=>{
-//     return res
-//   })
-// }
+import mdict from '../mdict/mdict.js'
+let translator;
+export async function lookup(file,text){
+  if (!translator){
+    translator = await mdict([file])
+  }
+  return translator.lookup(text)
+}

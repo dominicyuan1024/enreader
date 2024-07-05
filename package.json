@@ -13,11 +13,14 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "bluebird": "^3.7.2",
     "blueimp-md5": "^2.19.0",
     "dexie": "^4.0.7",
     "epubjs": "^0.3.93",
+    "jquery": "^3.7.1",
     "mdict-ts-chrome": "^1.0.1",
     "nrm": "^1.2.6",
+    "pako": "^2.1.0",
     "pinia": "^2.1.7",
     "vant": "^4.9.1",
     "vue": "^3.4.29",

@@ -2,7 +2,7 @@
   <div>
     <p ref="reading" id="reading"></p>
     <van-popup v-model:show="showNav" position="right" closeable>
-      <van-index-bar :index-list="[]" style="width:70vw;padding-top: 2.5rem;">
+      <van-index-bar :index-list="[]" style="width: 70vw; padding-top: 2.5rem">
         <!-- <van-index-anchor index="A" /> -->
         <van-cell
           v-for="item in navList"
@@ -13,14 +13,18 @@
       </van-index-bar>
     </van-popup>
     <van-popup v-model:show="showMark" position="right" closeable>
-      <van-index-bar :index-list="[]" style="width:70vw;padding-top: 2.5rem;">
+      <van-index-bar :index-list="[]" style="width: 70vw; padding-top: 2.5rem">
         <van-cell
           v-for="item in markList"
           :title="item.txt"
           :key="item.href"
-          @click="goToChapter(item);showMark=false"
-        ><p>{{item.num}}</p></van-cell>
+          @click="goToChapter(item)"
+          ><p>{{ item.num }}</p></van-cell
+        >
       </van-index-bar>
+    </van-popup>
+    <van-popup v-model:show="showTranslate" position="right" closeable>
+      <div style="width: 70vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
     </van-popup>
     <div class="tool">
       <span>{{ curPage }}</span>
@@ -39,6 +43,8 @@ import Epub from 'epubjs'
 import DB from '../db/bookcase.js'
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { lookup } from '../db/translate.js'
+let usingDict
 let ebook
 let rendition
 let navList = reactive([])
@@ -46,6 +52,8 @@ const showNav = ref(false)
 const curPage = ref('')
 const showMark = ref(false)
 const markList = reactive([])
+const showTranslate = ref(false)
+const translateInfo = ref("")
 async function renderBook() {
   const router = useRouter()
   const curRoute = router.currentRoute
@@ -82,25 +90,52 @@ async function renderBook() {
       'mix-blend-mode': 'multiply'
     }
   })
-  rendition.on('markClicked',(cfiRange)=>{
+  rendition.on('markClicked', (cfiRange) => {
     // rendition.annotations.hide(cfiRange)
     rendition.annotations.remove(cfiRange)
     // rendition.manager.views.forEach(item=>{
     //     item.unhighlight(cfiRange)
     //   })
+    let queryTxt;
+    ebook
+      .getRange(cfiRange)
+      .then((range) => {
+        return Promise.resolve(range.toString())
+      })
+      .then((txt) => {
+        queryTxt = txt
+        if (!usingDict) {
+          let dictHash = localStorage.getItem('dict-using-hash')
+          return DB.getBookContent(dictHash)
+        }
+        return Promise.resolve(usingDict)
+      })
+      .then((dictFile) => {
+        usingDict = dictFile
+        return lookup(usingDict.content, queryTxt)
+      })
+      .then(translatedDom=>{
+        showTranslate.value = true
+        translateInfo.value = translatedDom.html()
+        console.log(translatedDom.html())
+      })
+      .catch((err) => console.error('translated', err))
   })
+
   rendition.on('selected', (cfiRange, contents) => {
     rendition.annotations.highlight(cfiRange, {})
     contents.window.getSelection().removeAllRanges()
     ebook.getRange(cfiRange).then((range) => {
-      const txt = range ?range.toString().trim():""
-      if (!txt){
+      const txt = range ? range.toString().trim() : ''
+      if (!txt) {
         return
       }
-      const exist = markList  .filter(item=>{return item.txt===txt})
-      if(!exist.length){
-        markList.push({href:cfiRange,txt:txt,num:1})
-      }else{
+      const exist = markList.filter((item) => {
+        return item.txt === txt
+      })
+      if (!exist.length) {
+        markList.push({ href: cfiRange, txt: txt, num: 1 })
+      } else {
         exist[0].num++
       }
     })
@@ -202,6 +237,8 @@ export default {
       navList,
       showMark,
       markList,
+      showTranslate,
+      translateInfo
     }
   },
   async mounted() {
@@ -232,5 +269,8 @@ export default {
   position: absolute;
   bottom: 0;
   right: 0;
+}
+#translated {
+  list-style-type: disc;
 }
 </style>
