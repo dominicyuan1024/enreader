@@ -40,7 +40,7 @@
 
 <script>
 import Epub from 'epubjs'
-import DB from '../db/bookcase.js'
+import DB from '../db/bookCase.js'
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { lookup } from '../db/translate.js'
@@ -53,7 +53,7 @@ const curPage = ref('')
 const showMark = ref(false)
 const markList = reactive([])
 const showTranslate = ref(false)
-const translateInfo = ref("")
+const translateInfo = ref('')
 async function renderBook() {
   const router = useRouter()
   const curRoute = router.currentRoute
@@ -96,7 +96,7 @@ async function renderBook() {
     // rendition.manager.views.forEach(item=>{
     //     item.unhighlight(cfiRange)
     //   })
-    let queryTxt;
+    let queryTxt
     ebook
       .getRange(cfiRange)
       .then((range) => {
@@ -114,7 +114,7 @@ async function renderBook() {
         usingDict = dictFile
         return lookup(usingDict.content, queryTxt)
       })
-      .then(translatedDom=>{
+      .then((translatedDom) => {
         showTranslate.value = true
         translateInfo.value = translatedDom.html()
         console.log(translatedDom.html())

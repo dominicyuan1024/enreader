@@ -15,11 +15,11 @@
 <script>
 import { ref, reactive } from 'vue'
 import Md5 from 'blueimp-md5'
-import DB from '../db/bookcase.js'
+import DB from '../db/bookCase.js'
 // import {showLoadingToast} from "vant"
 // let loadingCtrl
 
-const dictChecked = ref("")
+const dictChecked = ref('')
 let dictList = reactive([])
 async function uploadFileList(file) {
   // loadingCtrl = showLoadingToast({
@@ -71,8 +71,8 @@ async function uploadFileList(file) {
   }
   // loadingCtrl.close()
 }
-function usingDict(data){
-  localStorage.setItem("dict-using-hash",data)
+function usingDict(data) {
+  localStorage.setItem('dict-using-hash', data)
 }
 export default {
   setup() {
@@ -83,7 +83,7 @@ export default {
       .catch((err) => {
         console.error('listDictMeta', err)
       })
-    return { dictChecked, dictList, uploadFileList,usingDict }
+    return { dictChecked, dictList, uploadFileList, usingDict }
   }
 }
 </script>
