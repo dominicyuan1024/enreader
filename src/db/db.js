@@ -1,6 +1,6 @@
 import Dexie from 'dexie'
 import { error, validateMd5 } from './utils.js'
-export const acceptFileFormat = ['application/epub+zip', 'application/epub',".mdx"]
+export const acceptFileFormat = ['application/epub+zip', 'application/epub', '.mdx']
 const originDb = new Dexie('bookcase')
 let stored = false
 const db = new Proxy(originDb, {
@@ -9,7 +9,8 @@ const db = new Proxy(originDb, {
       target.version(1).stores({
         bookMeta: '++id, &hash, hashAlg, title, author, cover, progress, utime',
         bookContent: '++id, &hash, content, filename, format, size, utime',
-        dictMeta: '++id, &hash, hashAlg, title, using, utime'
+        dictMeta: '++id, &hash, hashAlg, title, using, utime',
+        bookmark: '++id, bookHash, content, description,cfi, ctime, utime'
       })
       stored = true
     }
@@ -30,7 +31,6 @@ function putBookMeta(bookMeta) {
     return error('invalid bookMeta.hash')
   }
   bookMeta.utime = now()
-  console.dir(bookMeta)
   return db.bookMeta.put(bookMeta)
 }
 
@@ -104,6 +104,45 @@ function deleteBook(hash) {
   })()
 }
 
+function putBookmark(mark) {
+  if (!validateMd5(mark.bookHash)) {
+    return error(`invalid mark.bookHash ${mark.bookHash}`)
+  }
+  if (!mark.content) {
+    return error('invalid mark.content is empty')
+  }
+  return new Promise((res, rej) => {
+    const bookHash = mark.bookHash
+    const cfi = mark.cfi
+    db.bookmark
+      .get({ bookHash, cfi })
+      .then((data) => {
+        mark = data instanceof Object ? data : mark
+        mark.ctime = mark.ctime || now()
+        mark.utime = now()
+        return db.bookmark.put(mark)
+      })
+      .then(() => {
+        res(mark)
+      })
+      .catch((e) => {
+        rej(e)
+      })
+  })
+}
+function listBookmark(bookHash) {
+  return db.bookmark.filter(data=>data.bookHash===bookHash).toArray()
+}
+function deleteBookmark(bookHash, markContent) {
+  const wh = { bookHash }
+  if (markContent) {
+    wh.content = markContent
+  }
+  return db.bookmark.where(wh).delete()
+}
+function listWords(filterFn) {
+  return db.bookmark.filter(filterFn).toArray()
+}
 async function putBookCfi(hash, cfi) {
   localStorage.setItem(`book-cfi-${hash}`, cfi)
   const data = await getBookMeta(hash)
@@ -136,6 +175,10 @@ export default {
   listBookMeta,
   getBookMeta,
   deleteBook,
+  putBookmark,
+  listBookmark,
+  deleteBookmark,
+  listWords,
   putBookCfi,
   putBookPercentage,
   getBookCfi,

@@ -1,44 +1,51 @@
 <template>
-  <div id="book-list">
-    <van-grid column-num="3" :border="false">
-      <van-grid-item icon="photo-o" text="文字">
-        <div class="upload-book-btn">
-          <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
-            <p class="upload-book-btn-txt">
-              <van-button round type="success" color="rgba(200,200,200,1)" icon="plus"></van-button>
-            </p>
-          </van-uploader>
-        </div>
-      </van-grid-item>
-      <van-grid-item v-for="item in books" :key="item.hash" icon="photo-o">
-        <div @dblclick="deleteBook(item)" @touchmove="deleteBook(item)">
-          <RouterLink :to="{ path: '/book', query: { hash: item.hash, title: item.title } }">
-            <van-image
-              v-if="item.cover"
-              :src="item.cover"
-              fit="cover"
-              position="contain bottom"
-              style="box-shadow: 5px 0px 8px 0px #999"
+  <main class="bookcase">
+    <div id="book-list">
+      <van-grid column-num="3" :border="false">
+        <van-grid-item icon="photo-o" text="文字">
+          <div class="upload-book-btn">
+            <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
+              <p class="upload-book-btn-txt">
+                <van-button
+                  round
+                  type="success"
+                  color="rgba(200,200,200,1)"
+                  icon="plus"
+                ></van-button>
+              </p>
+            </van-uploader>
+          </div>
+        </van-grid-item>
+        <van-grid-item v-for="item in books" :key="item.hash" icon="photo-o">
+          <div @dblclick="deleteBook(item)" @touchmove="deleteBook(item)">
+            <RouterLink :to="{ path: '/book', query: { hash: item.hash, title: item.title } }">
+              <van-image
+                v-if="item.cover"
+                :src="item.cover"
+                fit="cover"
+                position="contain bottom"
+                style="box-shadow: 5px 0px 8px 0px #999"
+              />
+            </RouterLink>
+            <van-progress
+              :percentage="item.progress"
+              stroke-width="2"
+              color="hsla(160, 100%, 37%, 1)"
+              :show-pivot="false"
             />
-          </RouterLink>
-          <van-progress
-            :percentage="item.progress"
-            stroke-width="2"
-            color="hsla(160, 100%, 37%, 1)"
-            :show-pivot="false"
-          />
-          <van-text-ellipsis :content="item.title" :rows="item.ellipsisRow">*</van-text-ellipsis>
-          <!-- <van-text-ellipsis :content="'-' + item.author" rows="1" /> -->
-        </div>
-      </van-grid-item>
-    </van-grid>
-  </div>
+            <van-text-ellipsis :content="item.title" :rows="item.ellipsisRow">*</van-text-ellipsis>
+            <!-- <van-text-ellipsis :content="'-' + item.author" rows="1" /> -->
+          </div>
+        </van-grid-item>
+      </van-grid>
+    </div>
+  </main>
 </template>
 
 <script>
 import Epub from 'epubjs'
 import Md5 from 'blueimp-md5'
-import DB from '../db/bookCase.js'
+import DB from '../db/db.js'
 import { reactive } from 'vue'
 import { showLoadingToast } from 'vant'
 let books = reactive([])

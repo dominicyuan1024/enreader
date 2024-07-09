@@ -1,5 +1,27 @@
+<template>
+  <header>
+    <div class="wrapper">
+      <van-sticky>
+        <nav>
+          <RouterLink to="/"><van-icon name="cart" />书架</RouterLink>
+          <RouterLink to="/settings"><van-icon name="setting" />设置</RouterLink>
+          <span class="navbtn" @click="installPWA">PWA</span>
+          <span class="navbtn" @click="genShare">分享</span>
+        </nav>
+      </van-sticky>
+    </div>
+  </header>
+  <RouterView />
+  <van-overlay :show="showShare" @click="showShare = false" lazy-render>
+    <share v-if="showShare"></share>
+  </van-overlay>
+</template>
+
 <script setup>
+import share from './components/share.vue'
 import { RouterLink, RouterView } from 'vue-router'
+import { ref } from 'vue'
+const showShare = ref(false)
 function installPWA() {
   const deferredPrompt = window.deferredPrompt
   if (!deferredPrompt) {
@@ -17,23 +39,11 @@ function installPWA() {
     }
   })
 }
-</script>
 
-<template>
-  <header>
-    <div class="wrapper">
-      <van-sticky>
-        <nav>
-          <RouterLink to="/"><van-icon name="cart" />书架</RouterLink>
-          <!-- <RouterLink to="/table"><van-icon name="eye" />书桌</RouterLink> -->
-          <RouterLink to="/settings"><van-icon name="setting" />设置</RouterLink>
-          <span class="pwa-install" @click="installPWA">PWA</span>
-        </nav>
-      </van-sticky>
-    </div>
-  </header>
-  <RouterView />
-</template>
+function genShare() {
+  showShare.value = true
+}
+</script>
 
 <style scoped>
 header {
@@ -80,14 +90,14 @@ nav a:first-of-type {
     padding-right: calc(var(--section-gap) / 2);
   } */
 }
-.pwa-install {
+.navbtn {
   margin-left: 2rem;
   border: 2px solid;
   border-color: hsla(160, 100%, 37%, 1);
   padding: 2px 0.5rem;
   border-radius: 1rem;
 }
-.pwa-install:hover {
+.navbtn:hover {
   cursor: pointer;
   background-color: hsla(160, 100%, 37%, 1);
 }

@@ -15,11 +15,10 @@
 <script>
 import { ref, reactive } from 'vue'
 import Md5 from 'blueimp-md5'
-import DB from '../db/bookCase.js'
+import DB from '../db/db.js'
 // import {showLoadingToast} from "vant"
 // let loadingCtrl
-
-const dictChecked = ref('')
+const dictChecked = ref(localStorage.getItem('dict-using-hash') || '')
 let dictList = reactive([])
 async function uploadFileList(file) {
   // loadingCtrl = showLoadingToast({
