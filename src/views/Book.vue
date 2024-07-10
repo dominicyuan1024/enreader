@@ -69,11 +69,26 @@ async function renderBook() {
   ebook = Epub()
   ebook.open(res.content, 'binary')
   rendition = ebook.renderTo('reading', {
-    flow: 'paginated', // 分页模式
-    manager: 'continuous', // 连续滑屏模式
-    snap: true, // 吸附到页面边缘
+    flow: 'paginated', // 分页模式 'paginated' | 'scrolled'
+    // flow: "scrolled-doc",
+    manager: 'continuous', // 连续滑屏模式 'continuous' | 'default'
+    snap: true, // 是否支持翻页
     width: '100%',
-    height: '100%'
+    height: '100%',
+    spread: false // 是否显示双页
+    // ignoreClass?: string; // 忽略类名
+    // view?: 'iframe' | Object | Function; // 视图容器
+    // minSpreadWidth?: number; // 最小触发双页的宽度
+    // resizeOnOrientationChange?: boolean; // 在窗口 resize 时调整内容尺寸
+    // script?: string; // 注入到 View 中的 js 代码
+    // stylesheet?: string; // 注入到 View 中的 css 样式
+    // infinite?: boolean; // 是否无限翻页
+    // overflow?: string; // 设置视图的 CSS overflow 属性
+    // defaultDirection?: string; // 阅读方向
+    // allowScriptedContent?: boolean; // iframe 沙盒是否能够执行 js
+  })
+  rendition.hooks.render.register((iframeView) => {
+    preventBookDefaultEvent(iframeView.document)
   })
   if (!cfi) {
     cfi = await DB.getBookCfi(bookHash)
@@ -82,7 +97,7 @@ async function renderBook() {
   ebook.ready.then(() => {
     ebook.locations.generate(1600)
     highlightHistory()
-    preventDefaultTouch()
+    // preventDefaultTouch()
   })
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
@@ -258,20 +273,14 @@ function viewMark() {
     .catch((err) => console.error('viewMark listBookmark', err))
 }
 function preventDefaultHandler(e) {
-  console.log('preventDefaultHandler')
   e.preventDefault()
 }
-const toucheEname = ['touchstart', 'touchmove']
-function preventDefaultTouch() {
-  toucheEname.forEach((ename) => {
-    document.addEventListener(ename, preventDefaultHandler, {
+function preventBookDefaultEvent(doc){
+  ['touchmove',"select"].forEach((ename) => {
+    doc.removeEventListener(ename, preventDefaultHandler)
+    doc.addEventListener(ename, preventDefaultHandler, {
       passive: false
     })
-  })
-}
-function revertDefaultTouch() {
-  toucheEname.forEach((ename) => {
-    document.removeEventListener(ename, preventDefaultHandler)
   })
 }
 export default {
@@ -305,7 +314,7 @@ export default {
       rendition = null
       ebook = null
     }
-    revertDefaultTouch()
+    // revertDefaultTouch()
   }
 }
 </script>

@@ -7,16 +7,17 @@
 
 <script>
 import * as echarts from 'echarts/core'
-import { SVGRenderer } from 'echarts/renderers'
+import { CanvasRenderer } from 'echarts/renderers'
 import { TitleComponent } from 'echarts/components'
 import 'echarts-wordcloud'
-echarts.use([SVGRenderer, TitleComponent])
+echarts.use([CanvasRenderer, TitleComponent])
 import DB from '../db/db.js'
 import { ref } from 'vue'
 const showShare = ref(false)
 const todayWords = ref([])
 const letterArr = [...Array(26).keys()].map((i) => String.fromCharCode(i + 65))
 let wordCloudChart
+const imgTitle = '今日新词'
 function getTodayWords() {
   return DB.listWords((bookmark) => {
     const utimestamp = bookmark.utime
@@ -61,36 +62,51 @@ function wordsRotate([txt]) {
 function downloadImg() {
   const el = document.createElement('a')
   el.href = wordCloudChart.getDataURL()
-  el.download = '今日生词'
+  el.download = `${imgTitle}.${dayString()}`
   const event = new MouseEvent('click')
   el.dispatchEvent(event)
 }
+function dayString() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const d = now.getDay()
+  return `${y}.${m}.${d}`
+}
 function renderTodayWords(data) {
   try {
+    data = data.filter((word) => {
+      const idx = word.name.trim().indexOf(' ')
+      return idx === -1
+    })
     const el = document.getElementById('wordcloud')
     wordCloudChart = echarts.init(el, null, {
-      renderer: 'svg'
-      // devicePixelRatio: window.devicePixelRatio
+      devicePixelRatio: window.devicePixelRatio
     })
     wordCloudChart.setOption({
+      backgroundColor: '#333',
       title: [
-      {
-        text: `今日 ${data.length} 生词`,
-        textStyle: {
-          fontSize: "8px",
-        },
-        x:"center",
-        y:"top"
-      },{
-        text:`${new Date().toLocaleDateString()}`,
-        textStyle: {
-          fontSize: "8px",
-          fontWeight: "normal"
-        },
-        top:12,
-        y:"top",
-        x:"center",
-      }
+        {
+          text: `${imgTitle} {big|${data.length}} ${dayString()}`,
+          textStyle: {
+            // fontWeight: 'normal',
+            fontSize: 10,
+            color: '#fff',
+            verticalAlign: 'bottom',
+            rich: {
+              big: {
+                fontSize: 20,
+                fontWeight: 700,
+                color: '#EEA644',
+                verticalAlign: 'bottom',
+                align: 'bottom',
+                padding: [0, 0, 5, 0]
+              }
+            }
+          },
+          x: 'center',
+          y: 'bottom'
+        }
       ],
       series: [
         {
@@ -118,9 +134,9 @@ function renderTodayWords(data) {
               return (
                 'rgb(' +
                 [
-                  Math.round(Math.random() * 160),
-                  Math.round(Math.random() * 160),
-                  Math.round(Math.random() * 160)
+                  Math.round(Math.random() * 160 + 100),
+                  Math.round(Math.random() * 160 + 100),
+                  Math.round(Math.random() * 160 + 100)
                 ].join(',') +
                 ')'
               )
@@ -146,8 +162,12 @@ export default {
     }
   },
   mounted() {
-    console.log("mounted")
+    console.log('mounted')
     getTodayWords().then(renderTodayWords)
+  },
+  unmounted() {
+    wordCloudChart && wordCloudChart.clear()
+    wordCloudChart = null
   }
 }
 </script>
