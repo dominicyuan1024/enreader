@@ -15,10 +15,15 @@ const router = createRouter({
       component: () => import('../views/Book.vue')
     },
     {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('../views/Settings.vue')
-    }
+      path: '/setting',
+      name: 'setting',
+      component: () => import('../views/Setting.vue')
+    },
+    {
+      path: '/word',
+      name: 'word',
+      component: () => import('../views/Word.vue')
+    },
   ]
 })
 

@@ -1,27 +1,71 @@
 <template>
-  <header>
-    <div class="wrapper">
-      <van-sticky>
-        <nav>
-          <RouterLink to="/"><van-icon name="cart" />书架</RouterLink>
-          <RouterLink to="/settings"><van-icon name="setting" />设置</RouterLink>
-          <span class="navbtn" @click="installPWA">PWA</span>
-          <span class="navbtn" @click="genShare">分享</span>
-        </nav>
-      </van-sticky>
-    </div>
+  <RouterView style="min-height: calc(100vh - 3rem)" />
+  <header class="app-header">
+    <van-sticky>
+      <van-tabbar
+        v-model="navActive"
+        :fixed="false"
+        :before-change="preventNavChange"
+        active-color="hsla(160, 100%, 37%, 1)"
+      >
+        <van-tabbar-item
+          v-for="item in navList"
+          :name="item.tit"
+          :icon="item.icon"
+          :key="item.to"
+          :to="item.to"
+          >{{ item.tit }}</van-tabbar-item
+        >
+        <van-tabbar-item icon="good-job-o" @click="genShare">打卡</van-tabbar-item>
+        <van-tabbar-item icon="star-o" @click="installPWA">PWA</van-tabbar-item>
+        <van-tabbar-item
+          icon="ellipsis"
+          @click="handleShowMore"
+          :badge="showMoreBadge"
+          :badge-props="{ 'show-zero': false, color: 'hsla(160, 100%, 37%, 1)', offset: [5, -4] }"
+        ></van-tabbar-item>
+      </van-tabbar>
+      <nav></nav>
+    </van-sticky>
+    <van-popup v-model:show="showShare" position="top">
+      <share v-if="showShare"></share>
+    </van-popup>
+    <van-popup v-model:show="showMore" position="bottom">
+      <div style="text-align: center; padding: 4rem 0">
+        <h1>暂无更多</h1>
+        <h1>来日方长</h1>
+        <h1>尽请期待</h1>
+      </div>
+    </van-popup>
   </header>
-  <RouterView />
-  <van-overlay :show="showShare" @click="showShare = false" lazy-render>
-    <share v-if="showShare"></share>
-  </van-overlay>
 </template>
 
 <script setup>
 import share from './components/share.vue'
-import { RouterLink, RouterView } from 'vue-router'
-import { ref } from 'vue'
+import { RouterView, useRouter } from 'vue-router'
+import { ref, watch, reactive } from 'vue'
+const navList = [
+  { icon: 'wap-home', to: '/', tit: '书架' },
+  { icon: 'comment', to: '/word', tit: '笔记' },
+  { icon: 'setting', to: '/setting', tit: '设置' }
+]
+const navActive = ref('')
 const showShare = ref(false)
+const showMore = ref(false)
+const showMoreBadge = ref(0)
+const router = useRouter()
+const routePath = router.currentRoute
+watch(reactive(routePath), (to) => {
+  if (to.path === '/book') {
+    showMoreBadge.value = 5
+  }
+  const curNav = navList.filter((item) => item.to === to.path)
+  if (curNav.length === 0) {
+    navActive.value = ''
+    return
+  }
+  navActive.value = curNav[0].tit
+})
 function installPWA() {
   const deferredPrompt = window.deferredPrompt
   if (!deferredPrompt) {
@@ -39,66 +83,29 @@ function installPWA() {
     }
   })
 }
-
 function genShare() {
   showShare.value = true
+}
+function handleShowMore() {
+  showMore.value = true
+}
+function preventNavChange(name) {
+  return navList.filter((item) => item.tit === name).length ? true : false
 }
 </script>
 
 <style scoped>
-header {
-  height: 2rem;
-  line-height: 1.5;
-}
-.wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-
-nav {
-  background-color: #fff;
+.app-header {
   width: 100%;
-  font-size: 12px;
-  text-align: center;
+  height: 3rem;
 }
-
-nav a.router-link-exact-active {
-  color: hsla(160, 100%, 37%, 1);
+.small-font {
 }
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-  color: var(--color-text);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
 @media (min-width: 1024px) {
   /* header {
     display: flex;
     place-items: center;
     padding-right: calc(var(--section-gap) / 2);
   } */
-}
-.navbtn {
-  margin-left: 2rem;
-  border: 2px solid;
-  border-color: hsla(160, 100%, 37%, 1);
-  padding: 2px 0.5rem;
-  border-radius: 1rem;
-}
-.navbtn:hover {
-  cursor: pointer;
-  background-color: hsla(160, 100%, 37%, 1);
 }
 </style>

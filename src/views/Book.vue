@@ -1,6 +1,6 @@
 <template>
-  <main class="book">
-    <div>
+  <main class="book-wrap">
+    <div class="book">
       <p ref="reading" id="reading"></p>
       <van-popup v-model:show="showNav" position="right" closeable>
         <van-index-bar :index-list="[]" style="width: 70vw; padding-top: 2.5rem">
@@ -28,22 +28,31 @@
         <div style="width: 70vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
       </van-popup>
       <div class="tool">
-        <span>{{ curPage }}</span>
-        <van-button type="primary" color="hsla(160, 100%, 37%, 1)" @click="viewMark"
+        <!-- <van-button type="primary" color="hsla(160, 100%, 37%, 1)" @click="viewMark"
           >笔记</van-button
         >
         <van-button type="primary" color="hsla(160, 100%, 37%, 1)" @click="showNav = true"
           >目录</van-button
-        >
+        > -->
+        <p style="font-size: 0.6rem; padding-right: 0.5rem; padding-top: 0.5rem">
+          {{ curPage ? '本章:' + curPage : '' }}
+          {{ bookProgress ? '全书:' + bookProgress + '%' : '' }}
+        </p>
+        <van-progress
+          :percentage="bookProgress"
+          stroke-width="2"
+          color="hsla(160, 100%, 37%, 1)"
+          :show-pivot="false"
+        />
       </div>
     </div>
   </main>
 </template>
 
-<script>
+<script setup>
 import Epub from 'epubjs'
 import DB from '../db/db.js'
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { lookup } from '../db/translate.js'
 let usingDict
@@ -56,6 +65,49 @@ const showMark = ref(false)
 const markList = reactive([])
 const showTranslate = ref(false)
 const translateInfo = ref('')
+const bookProgress = ref(0)
+const themeList = [
+  {
+    alias: '默认',
+    name: 'Default',
+    style: {
+      body: {
+        color: '#000',
+        background: '#ccc58f'
+      }
+    }
+  },
+  {
+    alias: '雅致',
+    name: 'Gold',
+    style: {
+      body: {
+        color: '#5c5b56',
+        background: '#c6c2b6'
+      }
+    }
+  },
+  {
+    alias: '护眼',
+    name: 'Eye',
+    style: {
+      body: {
+        color: '#404c42',
+        background: '#a9c1a9'
+      }
+    }
+  },
+  {
+    alias: '夜晚',
+    name: 'Night',
+    style: {
+      body: {
+        color: '#cecece',
+        background: '#000000'
+      }
+    }
+  }
+]
 let bookHash
 let router
 async function renderBook() {
@@ -94,11 +146,16 @@ async function renderBook() {
     cfi = await DB.getBookCfi(bookHash)
   }
   cfi ? rendition.display(cfi) : rendition.display()
-  ebook.ready.then(() => {
-    ebook.locations.generate(1600)
-    highlightHistory()
-    // preventDefaultTouch()
-  })
+  ebook.ready
+    .then(() => {
+      highlightHistory()
+      registTheme()
+      rendition.themes.select('Default')
+      return ebook.locations.generate(1600)
+    })
+    .then(() => {
+      onProgress(rendition.currentLocation())
+    })
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
   rendition.themes.default(hlTheme())
@@ -170,7 +227,6 @@ function onProgress(location) {
     curPage.value = displayed.total ? `${cur}/${total}` : ''
   }
   const cfi = location.start.cfi
-  const percentage = ebook.locations.percentageFromCfi(cfi) || 0
   const curRoute = router.currentRoute
   const query = curRoute.value.query
   router.replace({
@@ -178,11 +234,15 @@ function onProgress(location) {
     query: { ...query, cfi: cfi }
   })
   cfi ? DB.putBookCfi(bookHash, cfi).catch((e) => console.error('putBookCfi', bookHash, e)) : null
-  percentage
-    ? DB.putBookPercentage(bookHash, percentage).catch((e) =>
-        console.error('putBookCfi', bookHash, e)
-      )
-    : null
+  const percentage = ebook.locations.percentageFromCfi(cfi)
+  if (typeof percentage !== 'number') {
+    return
+  }
+  DB.putBookPercentage(bookHash, percentage)
+    .then(() => {
+      viewProgress(percentage)
+    })
+    .catch((e) => console.error('putBookCfi', bookHash, e))
 }
 function highlightSelected(cfiRange, contents) {
   ebook
@@ -275,66 +335,67 @@ function viewMark() {
 function preventDefaultHandler(e) {
   e.preventDefault()
 }
-function preventBookDefaultEvent(doc){
-  ['touchmove',"select"].forEach((ename) => {
+function preventBookDefaultEvent(doc) {
+  ;['touchmove'].forEach((ename) => {
     doc.removeEventListener(ename, preventDefaultHandler)
     doc.addEventListener(ename, preventDefaultHandler, {
       passive: false
     })
   })
 }
-export default {
-  setup() {
-    return {
-      onKeyUp,
-      goToChapter,
-      curPage,
-      showNav,
-      navList,
-      showMark,
-      markList,
-      showTranslate,
-      translateInfo,
-      viewMark
-    }
-  },
-  async mounted() {
-    console.log('mount book')
-    router = useRouter()
-    const query = router.currentRoute.value.query
-    bookHash = query.hash
-    renderBook()
-  },
-  unmounted() {
-    console.log('unmounted book')
-    if (rendition) {
-      rendition.clear()
-      rendition.destroy()
-      ebook.destroy()
-      rendition = null
-      ebook = null
-    }
-    // revertDefaultTouch()
-  }
+function registTheme() {
+  themeList.forEach((theme) => {
+    // 'padding-bottom': `${realPx(30)}px!important`
+    theme.style.body['padding-bottom'] = '2rem!important'
+    rendition.themes.register(theme.name, theme.style)
+  })
 }
+function viewProgress(percentage) {
+  bookProgress.value = Math.floor(percentage * 100)
+}
+onMounted(async () => {
+  console.log('mount book')
+  router = useRouter()
+  const query = router.currentRoute.value.query
+  bookHash = query.hash
+  renderBook()
+  DB.getBookPercentage(bookHash)
+    .then(viewProgress)
+    .catch((e) => console.error('mount getBookPercentage', bookHash, e))
+})
+onUnmounted(() => {
+  console.log('unmounted book')
+  if (rendition) {
+    rendition.clear()
+    rendition.destroy()
+    ebook.destroy()
+    rendition = null
+    ebook = null
+  }
+  // revertDefaultTouch()
+})
 </script>
 
 <style scoped>
 .book {
-  background: #0f0;
-  height: calc(100vh - 2rem);
+  height: calc(100vh - 3rem);
+  overflow: hidden;
+  position: relative;
 }
 #reading {
-  background-color: #ccc58f;
-  height: calc(100vh - 2rem);
+  height: 100%;
+  /* padding-bottom: 3rem; */
   width: 100vw;
-  padding: 1rem;
-  background-color: hsla(13, 22, 33, 0);
 }
 .tool {
+  padding-top: 2px;
   position: absolute;
   bottom: 0;
   right: 0;
+  width: 100%;
+  /* height: 3rem; */
+  text-align: right;
+  vertical-align: text-bottom;
 }
 </style>
 <style>

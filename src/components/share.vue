@@ -1,6 +1,6 @@
 <template>
   <div class="word-share">
-    <div id="wordcloud" style="height: 100vw; width: 100vw"></div>
+    <div id="wordcloud" style="height: 100vw; width: 100vw;max-height: 70vh;"></div>
     <van-button color="hsla(160, 100%, 37%, 1)" @click="downloadImg">保存图片</van-button>
   </div>
 </template>
@@ -62,16 +62,17 @@ function wordsRotate([txt]) {
 function downloadImg() {
   const el = document.createElement('a')
   el.href = wordCloudChart.getDataURL()
-  el.download = `${imgTitle}.${dayString()}`
+  el.download = `${imgTitle}-${dayString('_')}`
   const event = new MouseEvent('click')
   el.dispatchEvent(event)
 }
-function dayString() {
+function dayString(seq) {
+  if (!seq) {
+    seq = '.'
+  }
   const now = new Date()
-  const y = now.getFullYear()
-  const m = now.getMonth()
-  const d = now.getDay()
-  return `${y}.${m}.${d}`
+  const res = [now.getFullYear(), now.getMonth(), now.getDay()].join(seq)
+  return res
 }
 function renderTodayWords(data) {
   try {
