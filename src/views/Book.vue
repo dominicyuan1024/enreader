@@ -244,6 +244,31 @@ function onProgress(location) {
     })
     .catch((e) => console.error('putBookCfi', bookHash, e))
 }
+
+function getSelectCtx(range) {
+  const txt = range.commonAncestorContainer.data
+  const startOffset = range.startOffset
+  const endOffset = range.endOffset
+  let ctxStart = 0
+  let ctxEnd = txt.length
+  const alphabet = [...'abcdefghijklmnopqrstuvwxyz- ']
+  for (let i = startOffset; i >= 0; i--) {
+    const letter = txt[i].toLowerCase()
+    if (alphabet.indexOf(letter) < 0) {
+      ctxStart = i
+      break
+    }
+  }
+  for (let i = endOffset; i < txt.length; i++) {
+    const letter = txt[i].toLowerCase()
+    if (alphabet.indexOf(letter) < 0) {
+      ctxEnd = i
+      break
+    }
+  }
+  ctxStart > 0 ? ctxStart++ : null
+  return txt.substring(ctxStart, ctxEnd).trim()
+}
 function highlightSelected(cfiRange, contents) {
   ebook
     .getRange(cfiRange)
@@ -258,7 +283,14 @@ function highlightSelected(cfiRange, contents) {
       if (exist.length) {
         return
       }
-      return DB.putBookmark({ bookHash, cfi: cfiRange, content: txt, description: '' })
+      const ctx = getSelectCtx(range)
+      return DB.putBookmark({
+        bookHash,
+        cfi: cfiRange,
+        content: txt,
+        description: '',
+        ctx: ctx
+      })
     })
     .then((data) => {
       rendition.annotations.highlight(cfiRange, {})

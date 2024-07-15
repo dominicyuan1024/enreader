@@ -10,7 +10,7 @@ const db = new Proxy(originDb, {
         bookMeta: '++id, &hash, hashAlg, title, author, cover, progress, utime',
         bookContent: '++id, &hash, content, filename, format, size, utime',
         dictMeta: '++id, &hash, hashAlg, title, using, utime',
-        bookmark: '++id, bookHash, content, description,cfi, ctime, utime'
+        bookmark: '++id, bookHash, content, description, cfi, ctx, ctime, utime'
       })
       stored = true
     }
