@@ -131,13 +131,10 @@ function putBookmark(mark) {
   })
 }
 function listBookmark(bookHash) {
-  return db.bookmark.filter(data=>data.bookHash===bookHash).toArray()
+  return db.bookmark.filter((data) => data.bookHash === bookHash).toArray()
 }
-function deleteBookmark(bookHash, markContent) {
-  const wh = { bookHash }
-  if (markContent) {
-    wh.content = markContent
-  }
+function deleteBookmark(bookHash, cfi) {
+  const wh = { bookHash, cfi }
   return db.bookmark.where(wh).delete()
 }
 function listWords(filterFn) {

@@ -43,7 +43,8 @@
 <script setup>
 import share from './components/share.vue'
 import { RouterView, useRouter } from 'vue-router'
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, onMounted, onUnmounted } from 'vue'
+import { ebus, ename } from './stores/events.js'
 const navList = [
   { icon: 'wap-home', to: '/', tit: '书架' },
   { icon: 'comment', to: '/word', tit: '笔记' },
@@ -57,7 +58,9 @@ const router = useRouter()
 const routePath = router.currentRoute
 watch(reactive(routePath), (to) => {
   if (to.path === '/book') {
-    showMoreBadge.value = 5
+    showMoreBadge.value = 2
+  } else {
+    showMoreBadge.value = 0
   }
   const curNav = navList.filter((item) => item.to === to.path)
   if (curNav.length === 0) {
@@ -87,19 +90,26 @@ function genShare() {
   showShare.value = true
 }
 function handleShowMore() {
-  showMore.value = true
+  ebus.emit(ename.NavMore)
+}
+function showMoreBookcase() {
+  router.currentRoute.value.path === '/' ? (showMore.value = true) : null
 }
 function preventNavChange(name) {
   return navList.filter((item) => item.tit === name).length ? true : false
 }
+onMounted(() => {
+  ebus.on(ename.NavMore, showMoreBookcase)
+})
+onUnmounted(() => {
+  ebus.off(ename.NavMore, showMoreBookcase)
+})
 </script>
 
 <style scoped>
 .app-header {
   width: 100%;
   height: 3rem;
-}
-.small-font {
 }
 @media (min-width: 1024px) {
   /* header {

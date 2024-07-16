@@ -20,30 +20,51 @@
             :title="item.content"
             :key="item.cfi"
             @click="goToChapter(item.cfi)"
-            ><p>{{ item.description }}</p></van-cell
+            ><p>{{ item.ctx }}</p></van-cell
           >
         </van-index-bar>
       </van-popup>
       <van-popup v-model:show="showTranslate" position="right" closeable>
         <div style="width: 70vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
       </van-popup>
-      <div class="tool">
-        <!-- <van-button type="primary" color="hsla(160, 100%, 37%, 1)" @click="viewMark"
-          >笔记</van-button
-        >
-        <van-button type="primary" color="hsla(160, 100%, 37%, 1)" @click="showNav = true"
-          >目录</van-button
-        > -->
+      <div class="book-footer">
         <p style="font-size: 0.6rem; padding-right: 0.5rem; padding-top: 0.5rem">
           {{ curPage ? '本章:' + curPage : '' }}
           {{ bookProgress ? '全书:' + bookProgress + '%' : '' }}
         </p>
-        <van-progress
-          :percentage="bookProgress"
-          stroke-width="2"
+      </div>
+      <div class="book-tool" v-if="isShowTool">
+        <van-button
+          square
+          type="primary"
+          icon="wap-nav"
           color="hsla(160, 100%, 37%, 1)"
-          :show-pivot="false"
-        />
+          @click="showNav = true"
+          >目录</van-button
+        >
+        <van-button
+          square
+          type="primary"
+          icon="records-o"
+          color="hsla(160, 100%, 37%, 1)"
+          @click="viewMark"
+          >生词</van-button
+        >
+        <div class="triangle"></div>
+      </div>
+      <div id="page-tool" v-show="isShowMarkPopover">
+        <div v-for="item in markActions" class="button-wrap">
+          <van-button
+            hairline
+            :key="item.text"
+            square
+            type="primary"
+            :icon="item.icon"
+            color="hsla(160, 100%, 37%, 1)"
+            @click="item.handler(item, $event)"
+            >{{ item.text }}</van-button
+          >
+        </div>
       </div>
     </div>
   </main>
@@ -55,6 +76,9 @@ import DB from '../db/db.js'
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { lookup } from '../db/translate.js'
+import { ebus, ename } from '../stores/events.js'
+import { copyToClipboard } from '@/stores/copyToClipboard.js'
+
 let usingDict
 let ebook
 let rendition
@@ -66,6 +90,13 @@ const markList = reactive([])
 const showTranslate = ref(false)
 const translateInfo = ref('')
 const bookProgress = ref(0)
+const isShowTool = ref(false)
+const isShowMarkPopover = ref(false)
+const markActions = [
+  { handler: clearHighlight, text: '', icon: 'delete-o' },
+  { handler: handleTranslate, text: '', icon: 'question-o' },
+  { handler: handleCopy, text: 'copy', icon: '' }
+]
 const themeList = [
   {
     alias: '默认',
@@ -139,8 +170,13 @@ async function renderBook() {
     // defaultDirection?: string; // 阅读方向
     // allowScriptedContent?: boolean; // iframe 沙盒是否能够执行 js
   })
+  rendition.on('rendered', () =>
+    rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
+  )
   rendition.hooks.render.register((iframeView) => {
     preventBookDefaultEvent(iframeView.document)
+    iframeView.document.removeEventListener('click', posiMarkPopover)
+    iframeView.document.addEventListener('click', posiMarkPopover)
   })
   if (!cfi) {
     cfi = await DB.getBookCfi(bookHash)
@@ -166,7 +202,7 @@ async function renderBook() {
 function hlTheme() {
   return {
     '::selection': {
-      background: 'rgba(255,255,0, 0.3)'
+      background: 'rgba(255,255,0, 1)'
     },
     '.epubjs-hl': {
       fill: 'yellow',
@@ -186,15 +222,47 @@ function highlightHistory() {
     })
     .catch((err) => console.error('highlightHistoryMark listBookmark', err))
 }
+let isClickHightLight = false
+let clickHightLightCfi
+let clickHightLightRange
 function onHighlightClick(cfiRange) {
-  // rendition.annotations.hide(cfiRange)
-  rendition.annotations.remove(cfiRange)
-  // rendition.manager.views.forEach(item=>{
-  //     item.unhighlight(cfiRange)
-  //   })
+  ebook.getRange(cfiRange).then((range) => {
+    clickHightLightCfi = cfiRange
+    clickHightLightRange = range
+    isClickHightLight = true
+  })
+}
+function posiMarkPopover(evt) {
+  if (isClickHightLight) {
+    const el = document.querySelector('#page-tool')
+    el.style.right = '0'
+    el.style.top = evt.pageY + 'px'
+    isShowMarkPopover.value = true
+    isClickHightLight = false
+    return
+  }
+  isShowMarkPopover.value = false
+  clickHightLightRange = undefined
+  clickHightLightCfi = undefined
+}
+
+function clearHighlight(item, evt) {
+  evt.stopPropagation()
+  DB.deleteBookmark(bookHash, clickHightLightCfi)
+    .then((data) => {
+      console.log('deleteBookmark', data)
+      rendition.manager.views.forEach((item) => {
+        item.unhighlight(clickHightLightCfi)
+        isShowMarkPopover.value = false
+      })
+    })
+    .catch((err) => console.error('clearHighlight', err))
+}
+
+function handleTranslate() {
   let queryTxt
   ebook
-    .getRange(cfiRange)
+    .getRange(clickHightLightCfi)
     .then((range) => {
       return Promise.resolve(range.toString())
     })
@@ -216,6 +284,15 @@ function onHighlightClick(cfiRange) {
     })
     .catch((err) => console.error('translated', err))
 }
+
+function handleCopy() {
+  copyToClipboard(clickHightLightRange.toString())
+    .then(() => {
+      isShowMarkPopover.value = false
+    })
+    .catch((err) => console.error('copyToClipboard', err))
+}
+
 function onProgress(location) {
   if (!location || !location.start) {
     return
@@ -251,7 +328,7 @@ function getSelectCtx(range) {
   const endOffset = range.endOffset
   let ctxStart = 0
   let ctxEnd = txt.length
-  const alphabet = [...'abcdefghijklmnopqrstuvwxyz- ']
+  const alphabet = [..."abcdefghijklmnopqrstuvwxyz-' 0123456789"]
   for (let i = startOffset; i >= 0; i--) {
     const letter = txt[i].toLowerCase()
     if (alphabet.indexOf(letter) < 0) {
@@ -262,7 +339,7 @@ function getSelectCtx(range) {
   for (let i = endOffset; i < txt.length; i++) {
     const letter = txt[i].toLowerCase()
     if (alphabet.indexOf(letter) < 0) {
-      ctxEnd = i
+      ctxEnd = i + 1
       break
     }
   }
@@ -270,6 +347,7 @@ function getSelectCtx(range) {
   return txt.substring(ctxStart, ctxEnd).trim()
 }
 function highlightSelected(cfiRange, contents) {
+  contents.window.getSelection().removeAllRanges()
   ebook
     .getRange(cfiRange)
     .then((range) => {
@@ -295,7 +373,6 @@ function highlightSelected(cfiRange, contents) {
     .then((data) => {
       rendition.annotations.highlight(cfiRange, {})
       markList.push(data)
-      contents.window.getSelection().removeAllRanges()
     })
     .catch((err) => console.error('highlight', cfiRange, err))
 }
@@ -377,15 +454,19 @@ function preventBookDefaultEvent(doc) {
 }
 function registTheme() {
   themeList.forEach((theme) => {
-    // 'padding-bottom': `${realPx(30)}px!important`
-    theme.style.body['padding-bottom'] = '2rem!important'
+    theme.style.body['padding-bottom'] = '1rem!important'
     rendition.themes.register(theme.name, theme.style)
   })
 }
 function viewProgress(percentage) {
   bookProgress.value = Math.floor(percentage * 100)
 }
+function showTool() {
+  isShowTool.value = !isShowTool.value
+}
+function onMarkActions(action) {}
 onMounted(async () => {
+  ebus.on(ename.NavMore, showTool)
   console.log('mount book')
   router = useRouter()
   const query = router.currentRoute.value.query
@@ -396,6 +477,7 @@ onMounted(async () => {
     .catch((e) => console.error('mount getBookPercentage', bookHash, e))
 })
 onUnmounted(() => {
+  ebus.off(ename.NavMore, showTool)
   console.log('unmounted book')
   if (rendition) {
     rendition.clear()
@@ -404,7 +486,6 @@ onUnmounted(() => {
     rendition = null
     ebook = null
   }
-  // revertDefaultTouch()
 })
 </script>
 
@@ -419,8 +500,7 @@ onUnmounted(() => {
   /* padding-bottom: 3rem; */
   width: 100vw;
 }
-.tool {
-  padding-top: 2px;
+.book-footer {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -428,6 +508,32 @@ onUnmounted(() => {
   /* height: 3rem; */
   text-align: right;
   vertical-align: text-bottom;
+}
+.book-tool {
+  margin-right: 0.5rem;
+  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+.triangle {
+  width: 0;
+  height: 0;
+  border-top: 0.5rem solid hsla(160, 100%, 37%, 1);
+  border-right: 0.5rem solid transparent;
+  border-left: 0.5rem solid transparent;
+  margin-right: 0.5rem;
+}
+#page-tool {
+  display: flex;
+  position: fixed;
+  z-index: 1000;
+}
+#page-tool .button-wrap {
+  margin: 2px;
 }
 </style>
 <style>
