@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "test:unit": "vitest",
@@ -19,6 +19,7 @@
     "echarts": "^5.5.1",
     "echarts-wordcloud": "^2.1.0",
     "epubjs": "^0.3.93",
+    "file-saver": "^2.0.5",
     "jquery": "^3.7.1",
     "mitt": "^3.0.1",
     "pako": "^2.1.0",

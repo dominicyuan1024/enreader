@@ -13,6 +13,9 @@
         </van-radio-group>
       </van-collapse-item>
       <van-collapse-item title="布局" name="2" icon="shop-o"> </van-collapse-item>
+      <van-collapse-item title="安全" name="3" icon="shop-o">
+        <div>开发者模式 <van-switch v-model="devMode" @change="switchDevMode" /></div>
+      </van-collapse-item>
     </van-collapse>
   </div>
 </template>
@@ -21,7 +24,18 @@
 import { ref, reactive, onMounted } from 'vue'
 import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
-const activeNames = ref(['1'])
+import VConsole from 'vconsole'
+const activeNames = ref(['1', '3'])
+const devMode = ref(window.vconsole ? true : false)
+function switchDevMode(val) {
+  localStorage.setItem('devMode', val)
+  if (val) {
+    window.vconsole = new VConsole({ theme: 'dark' })
+  } else if (window.vconsole) {
+    window.vconsole.destroy()
+    window.vconsole = undefined
+  }
+}
 // import {showLoadingToast} from "vant"
 // let loadingCtrl
 const dictChecked = ref(localStorage.getItem('dict-using-hash') || '')

@@ -1,21 +1,20 @@
 <template>
   <div class="word-share">
-    <div id="wordcloud" style="height: 100vw; width: 100vw;max-height: 70vh;"></div>
+    <div id="wordcloud" style="height: 100vw; width: 100vw; max-height: 70vh"></div>
     <van-button color="hsla(160, 100%, 37%, 1)" @click="downloadImg">保存图片</van-button>
   </div>
 </template>
 
-<script>
+<script setup>
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { TitleComponent } from 'echarts/components'
+import { saveAs } from 'file-saver'
 import 'echarts-wordcloud'
 echarts.use([CanvasRenderer, TitleComponent])
 import DB from '../db/db.js'
-import { ref } from 'vue'
-const showShare = ref(false)
+import { onMounted, onUnmounted, ref } from 'vue'
 const todayWords = ref([])
-const letterArr = [...Array(26).keys()].map((i) => String.fromCharCode(i + 65))
 let wordCloudChart
 const imgTitle = '今日新词'
 function getTodayWords() {
@@ -42,29 +41,12 @@ function getTodayWords() {
     })
     .catch((err) => console.error('listBookmark', err))
 }
-function wordsColor([txt]) {
-  const letter = txt.trim()[0].toUpperCase()
-  let count = letterArr.indexOf(letter)
-  if (count < 100) {
-    count = 50
-  }
-  if (count > 200) {
-    count = 50
-  }
-  const cl = `rgb(${count * Math.random() * 10},${count * Math.random() * 10},${count * Math.random() * 10})`
-  return cl
-}
-function wordsRotate([txt]) {
-  const letter = txt.trim()[0].toUpperCase()
-  const count = letterArr.indexOf(letter)
-  return count * 6 - 90
-}
+const dlImgUrl = ref('')
 function downloadImg() {
-  const el = document.createElement('a')
-  el.href = wordCloudChart.getDataURL()
-  el.download = `${imgTitle}-${dayString('_')}`
-  const event = new MouseEvent('click')
-  el.dispatchEvent(event)
+  const dataUrl = wordCloudChart.getDataURL()
+  dlImgUrl.value = dataUrl
+  const fileName = `${imgTitle}-${dayString('_')}`
+  saveAs(dataUrl, fileName)
 }
 function dayString(seq) {
   if (!seq) {
@@ -151,26 +133,14 @@ function renderTodayWords(data) {
     console.error(e)
   }
 }
-export default {
-  setup() {
-    return {
-      getTodayWords,
-      showShare,
-      todayWords,
-      wordsColor,
-      wordsRotate,
-      downloadImg
-    }
-  },
-  mounted() {
-    console.log('mounted')
-    getTodayWords().then(renderTodayWords)
-  },
-  unmounted() {
-    wordCloudChart && wordCloudChart.clear()
-    wordCloudChart = null
-  }
-}
+onMounted(() => {
+  getTodayWords().then(renderTodayWords)
+})
+
+onUnmounted(() => {
+  wordCloudChart && wordCloudChart.clear()
+  wordCloudChart = null
+})
 </script>
 <style scoped>
 .word-share {
