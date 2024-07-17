@@ -1,5 +1,8 @@
 <template>
-  <main class="bookcase">
+  <main class="bookcase fix-footer fix-header">
+    <h3 class="page-header">
+      书架<van-tag color="hsla(160, 100%, 37%, 1)" round size="small" style="margin-left: 5px;">{{ books.length }}</van-tag>
+    </h3>
     <div id="book-list">
       <van-grid column-num="3" :border="false">
         <van-grid-item icon="photo-o" text="文字">
@@ -17,7 +20,7 @@
           </div>
         </van-grid-item>
         <van-grid-item v-for="item in books" :key="item.hash" icon="photo-o">
-          <div @dblclick="deleteBook(item)" @touchmove="deleteBook(item)">
+          <div>
             <RouterLink :to="{ path: '/book', query: { hash: item.hash, title: item.title } }">
               <van-image
                 v-if="item.cover"
@@ -42,11 +45,11 @@
   </main>
 </template>
 
-<script>
+<script setup>
 import Epub from 'epubjs'
 import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
-import { reactive } from 'vue'
+import { onUpdated, reactive } from 'vue'
 import { showLoadingToast } from 'vant'
 let books = reactive([])
 const uploadFileList = (file) => {
@@ -148,24 +151,14 @@ function sortBookcase(bookArr) {
     return cur.utime - pre.utime
   })
 }
-
-export default {
-  setup() {
-    refreshBookcase()
-    return {
-      books,
-      uploadFileList,
-      deleteBook
+refreshBookcase()
+onUpdated(() => {
+  books.forEach((item) => {
+    if (!item.ellipsisRow) {
+      item.ellipsisRow = 1
     }
-  },
-  updated() {
-    books.forEach((item) => {
-      if (!item.ellipsisRow) {
-        item.ellipsisRow = 1
-      }
-    })
-  }
-}
+  })
+})
 </script>
 
 <style>

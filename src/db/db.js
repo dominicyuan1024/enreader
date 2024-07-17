@@ -133,6 +133,9 @@ function putBookmark(mark) {
 function listBookmark(bookHash) {
   return db.bookmark.filter((data) => data.bookHash === bookHash).toArray()
 }
+function listBookmarkAll() {
+  return db.bookmark.orderBy("utime").toArray()
+}
 function deleteBookmark(bookHash, cfi) {
   const wh = { bookHash, cfi }
   return db.bookmark.where(wh).delete()
@@ -173,6 +176,7 @@ export default {
   getBookMeta,
   deleteBook,
   putBookmark,
+  listBookmarkAll,
   listBookmark,
   deleteBookmark,
   listWords,

@@ -5,8 +5,9 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import VConsole from 'vconsole'
-new VConsole({ theme: 'dark' })
+// import VConsole from 'vconsole'
+
+// new VConsole({ theme: 'dark' })
 
 const app = createApp(App)
 

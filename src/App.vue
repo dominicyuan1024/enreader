@@ -1,5 +1,5 @@
 <template>
-  <RouterView style="min-height: calc(100vh - 3rem)" />
+  <RouterView style="min-height: 100vh;overflow-y: scroll;" />
   <header class="app-header">
     <van-sticky>
       <van-tabbar
@@ -14,8 +14,7 @@
           :icon="item.icon"
           :key="item.to"
           :to="item.to"
-          >{{ item.tit }}</van-tabbar-item
-        >
+        ></van-tabbar-item>
         <van-tabbar-item icon="good-job-o" @click="genShare">打卡</van-tabbar-item>
         <van-tabbar-item icon="star-o" @click="installPWA">PWA</van-tabbar-item>
         <van-tabbar-item
@@ -25,30 +24,29 @@
           :badge-props="{ 'show-zero': false, color: 'hsla(160, 100%, 37%, 1)', offset: [5, -4] }"
         ></van-tabbar-item>
       </van-tabbar>
-      <nav></nav>
     </van-sticky>
-    <van-popup v-model:show="showShare" position="top">
-      <share v-if="showShare"></share>
-    </van-popup>
-    <van-popup v-model:show="showMore" position="bottom">
-      <div style="text-align: center; padding: 4rem 0">
-        <h1>暂无更多</h1>
-        <h1>来日方长</h1>
-        <h1>尽请期待</h1>
-      </div>
-    </van-popup>
   </header>
+  <van-popup v-model:show="showShare" position="top">
+    <share v-if="showShare"></share>
+  </van-popup>
+  <van-popup v-model:show="showMore" position="bottom">
+    <div style="text-align: center; padding: 4rem 0">
+      <h1>暂无更多</h1>
+      <h1>来日方长</h1>
+      <h1>尽请期待</h1>
+    </div>
+  </van-popup>
 </template>
 
 <script setup>
 import share from './components/share.vue'
 import { RouterView, useRouter } from 'vue-router'
-import { ref, watch, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, watch, reactive } from 'vue'
 import { ebus, ename } from './stores/events.js'
 const navList = [
   { icon: 'wap-home', to: '/', tit: '书架' },
-  { icon: 'comment', to: '/word', tit: '笔记' },
-  { icon: 'setting', to: '/setting', tit: '设置' }
+  { icon: 'records', to: '/note', tit: '笔记' },
+  { icon: 'user', to: '/setting', tit: '设置' }
 ]
 const navActive = ref('')
 const showShare = ref(false)
@@ -91,23 +89,20 @@ function genShare() {
 }
 function handleShowMore() {
   ebus.emit(ename.NavMore)
+  showMoreBookcase()
 }
 function showMoreBookcase() {
-  router.currentRoute.value.path === '/' ? (showMore.value = true) : null
+  router.currentRoute.value.path !== '/book' ? (showMore.value = true) : null
 }
 function preventNavChange(name) {
   return navList.filter((item) => item.tit === name).length ? true : false
 }
-onMounted(() => {
-  ebus.on(ename.NavMore, showMoreBookcase)
-})
-onUnmounted(() => {
-  ebus.off(ename.NavMore, showMoreBookcase)
-})
 </script>
 
 <style scoped>
 .app-header {
+  position: fixed;
+  bottom: 0;
   width: 100%;
   height: 3rem;
 }

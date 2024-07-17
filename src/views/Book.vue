@@ -2,37 +2,41 @@
   <main class="book-wrap">
     <div class="book">
       <p ref="reading" id="reading"></p>
-      <van-popup v-model:show="showNav" position="right" closeable>
-        <van-index-bar :index-list="[]" style="width: 70vw; padding-top: 2.5rem">
-          <!-- <van-index-anchor index="A" /> -->
-          <van-cell
-            v-for="item in navList"
-            :title="item.tit"
-            :key="item.id"
-            @click="goToChapter(item.href)"
-          ></van-cell>
-        </van-index-bar>
-      </van-popup>
-      <van-popup v-model:show="showMark" position="right" closeable>
-        <van-index-bar :index-list="[]" style="width: 70vw; padding-top: 2.5rem">
-          <van-cell
-            v-for="item in markList"
-            :title="item.content"
-            :key="item.cfi"
-            @click="goToChapter(item.cfi)"
-            ><p>{{ item.ctx }}</p></van-cell
-          >
-        </van-index-bar>
-      </van-popup>
-      <van-popup v-model:show="showTranslate" position="right" closeable>
-        <div style="width: 70vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
-      </van-popup>
       <div class="book-footer">
-        <p style="font-size: 0.6rem; padding-right: 0.5rem; padding-top: 0.5rem">
+        <p>{{ bookTitle }}</p>
+        <p>{{ chaptertitle }}</p>
+        <p class="book-progress">
           {{ curPage ? '本章:' + curPage : '' }}
           {{ bookProgress ? '全书:' + bookProgress + '%' : '' }}
         </p>
       </div>
+      <van-popup v-model:show="showNav" position="left">
+        <van-list disabled style="width: 85vw; padding-top: 2.5rem">
+          <van-cell
+            v-for="item in navList"
+            :key="item.href"
+            :title="item.tit"
+            @click="goToChapter(item.href)"
+          >
+            <van-icon v-if="item.href === curBookNavHref" name="eye"></van-icon>
+          </van-cell>
+        </van-list>
+      </van-popup>
+      <van-popup v-model:show="showMark" position="left">
+        <van-list disabled style="width: 85vw; padding-top: 2.5rem">
+          <van-cell
+            v-for="item in markList"
+            :key="item.id"
+            :title="item.content"
+            @click="goToChapter(item.cfi)"
+          >
+            {{ item.ctx }}
+          </van-cell>
+        </van-list>
+      </van-popup>
+      <van-popup v-model:show="showTranslate" position="left">
+        <div style="width: 85vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
+      </van-popup>
       <div class="book-tool" v-if="isShowTool">
         <van-button
           square
@@ -50,13 +54,20 @@
           @click="viewMark"
           >生词</van-button
         >
+        <van-button
+          square
+          type="primary"
+          icon="setting-o"
+          color="hsla(160, 100%, 37%, 1)"
+          @click="viewMark"
+          >设置</van-button
+        >
         <div class="triangle"></div>
       </div>
       <div id="page-tool" v-show="isShowMarkPopover">
-        <div v-for="item in markActions" class="button-wrap">
+        <div v-for="item in markActions" class="button-wrap" :key="item.text">
           <van-button
             hairline
-            :key="item.text"
             square
             type="primary"
             :icon="item.icon"
@@ -83,6 +94,7 @@ let usingDict
 let ebook
 let rendition
 let navList = reactive([])
+const curBookNavHref = ref('')
 const showNav = ref(false)
 const curPage = ref('')
 const showMark = ref(false)
@@ -92,6 +104,9 @@ const translateInfo = ref('')
 const bookProgress = ref(0)
 const isShowTool = ref(false)
 const isShowMarkPopover = ref(false)
+const bookTitle = ref('')
+const chaptertitle = ref('')
+
 const markActions = [
   { handler: clearHighlight, text: '', icon: 'delete-o' },
   { handler: handleTranslate, text: '', icon: 'question-o' },
@@ -233,17 +248,19 @@ function onHighlightClick(cfiRange) {
   })
 }
 function posiMarkPopover(evt) {
-  if (isClickHightLight) {
+  if (isClickHightLight && clickHightLightRange) {
     const el = document.querySelector('#page-tool')
     el.style.right = '0'
     el.style.top = evt.pageY + 'px'
     isShowMarkPopover.value = true
     isClickHightLight = false
     return
+  } else {
+    isShowMarkPopover.value = false
+    clickHightLightRange = undefined
+    clickHightLightCfi = undefined
   }
-  isShowMarkPopover.value = false
-  clickHightLightRange = undefined
-  clickHightLightCfi = undefined
+  isShowTool.value = false
 }
 
 function clearHighlight(item, evt) {
@@ -292,11 +309,21 @@ function handleCopy() {
     })
     .catch((err) => console.error('copyToClipboard', err))
 }
-
 function onProgress(location) {
   if (!location || !location.start) {
     return
   }
+  const chapterHref = location.start.href
+  const hrefArr = chapterHref.split('/')
+  let navHref = hrefArr[hrefArr.length - 1]
+  const navIdx = navList.findIndex((item) => item.href.indexOf(navHref) >= 0)
+  if (navIdx >= 0) {
+    curBookNavHref.value = navList[navIdx].href
+    chaptertitle.value = navList[navIdx].tit
+  } else {
+    chaptertitle.value = ''
+  }
+
   const displayed = location.start.displayed
   if (displayed) {
     const cur = displayed.page ? displayed.page : ''
@@ -328,7 +355,7 @@ function getSelectCtx(range) {
   const endOffset = range.endOffset
   let ctxStart = 0
   let ctxEnd = txt.length
-  const alphabet = [..."abcdefghijklmnopqrstuvwxyz-' 0123456789"]
+  const alphabet = [..."abcdefghijklmnopqrstuvwxyz-—'’ 0123456789"]
   for (let i = startOffset; i >= 0; i--) {
     const letter = txt[i].toLowerCase()
     if (alphabet.indexOf(letter) < 0) {
@@ -389,9 +416,8 @@ function refreshBookNav(toc) {
   const addNav = (tocList, prefix) => {
     prefix = prefix ? prefix : ''
     const usePrefix = prefix.substr(1)
-    tocList.forEach((chapter, idx) => {
+    tocList.forEach((chapter) => {
       list.push({
-        id: idx,
         tit: usePrefix + chapter.label,
         href: chapter.href
       })
@@ -407,12 +433,13 @@ function refreshBookNav(toc) {
 function goToChapter(href) {
   rendition.display(href).catch((err) => {
     console.error('goToChapter err', href, err)
-    goToSearchChapter(href)
+    const relHref = searchChapter(href)
+    rendition.display(relHref).catch((err) => console.error('goToSearchChapter err', relHref, err))
   })
   showNav.value = false
   showMark.value = false
 }
-function goToSearchChapter(targetHref) {
+function searchChapter(targetHref) {
   const spineByHref = ebook.spine ? ebook.spine.spineByHref : []
   if (spineByHref.length === 0) {
     return
@@ -426,9 +453,7 @@ function goToSearchChapter(targetHref) {
       break
     }
   }
-  rendition
-    .display(targetHref)
-    .catch((err) => console.error('goToSearchChapter err', targetHref, err))
+  return targetHref
 }
 function viewMark() {
   DB.listBookmark(bookHash)
@@ -464,13 +489,13 @@ function viewProgress(percentage) {
 function showTool() {
   isShowTool.value = !isShowTool.value
 }
-function onMarkActions(action) {}
 onMounted(async () => {
   ebus.on(ename.NavMore, showTool)
   console.log('mount book')
   router = useRouter()
   const query = router.currentRoute.value.query
   bookHash = query.hash
+  bookTitle.value = `《${query.title}》`
   renderBook()
   DB.getBookPercentage(bookHash)
     .then(viewProgress)
@@ -501,13 +526,23 @@ onUnmounted(() => {
   width: 100vw;
 }
 .book-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.5rem;
+  background-color: #fff;
   position: absolute;
   bottom: 0;
-  right: 0;
+  bottom: 0;
   width: 100%;
-  /* height: 3rem; */
   text-align: right;
   vertical-align: text-bottom;
+  padding: 0 0.6rem;
+}
+.book-footer p {
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .book-tool {
   margin-right: 0.5rem;
