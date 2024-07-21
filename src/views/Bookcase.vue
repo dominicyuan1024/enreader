@@ -196,6 +196,8 @@ refreshBookcase()
   justify-content: end;
 }
 .book-editing {
+  display: flex;
+  justify-content: flex-end;
   position: absolute;
   width: 100%;
   height: 100%;

@@ -12,9 +12,9 @@
                 type="primary"
                 icon="down"
                 size="small"
+                :loading="item.loading"
                 @click="downloadDict(item)"
-                >下载</van-button
-              >
+              ></van-button>
               <van-radio v-else :name="item.hash"></van-radio>
             </div>
           </van-radio-group>
@@ -112,9 +112,11 @@ function usingDict(data) {
   localStorage.setItem('dict-using-hash', data)
 }
 function downloadDict(dict) {
+  dict.loading = true
   DB.registRemoteDict(dict.hash)
     .then(() => {
       dict.remote = false
+      dict.loading = false
     })
     .catch((err) => console.error('registRemoteDict error', dict, err))
 }
