@@ -1,5 +1,6 @@
 import Dexie from 'dexie'
 import { error, validateMd5 } from './utils.js'
+import axios from 'axios'
 export const acceptFileFormat = ['application/epub+zip', 'application/epub', '.mdx']
 const originDb = new Dexie('bookcase')
 let stored = false
@@ -58,11 +59,59 @@ function putDictMeta(dictMeta) {
 }
 
 function getDictMeta(hash) {
-  return db.bookMeta.get({ hash })
+  return db.dictMeta.get({ hash })
 }
 
 function listDictMeta() {
   return db.dictMeta.orderBy('id').toArray()
+}
+async function registRemoteDict(hash) {
+  const remoteDict = await axios.get('dict/default-dict-list.json')
+  const dictInfo = remoteDict.data.filter((item) => item.hash === hash)[0]
+  const { url, title } = dictInfo
+
+  let existDict = await getDictMeta(hash)
+  if (existDict && existDict.hash === hash) {
+    console.log('already exist dict meta', existDict)
+    return
+  }
+
+  let file = await getBookContent(hash)
+  if (!file) {
+    const fileRes = await axios.get(url, { responseType: 'blob' })
+    const fileType = fileRes.data.type
+    if (fileType.indexOf('mdx') < 0) {
+      const reason = `get remote dict file invalid type=${fileType}`
+      console.error(reason)
+      return Promise.reject(reason)
+    }
+    file = new File([fileRes.data], title, { type: fileType })
+    let res = await putBookContent({
+      hash,
+      content: file,
+      filename: file.name,
+      format: '.mdx',
+      size: file.size
+    })
+    if (typeof res !== 'number' || res < 0) {
+      const reason = `putBookContent default dict return ${res}`
+      console.error(reason)
+      return Promise.reject(reason)
+    }
+  } else {
+    console.log('already exist dict file', file.hash, file.filename)
+  }
+  let res = await putDictMeta({
+    hash,
+    title: title,
+    hashAlg: 'md5',
+    using: true
+  })
+  if (typeof res !== 'number' || res < 0) {
+    const reason = `putDictMeta default dict return ${res}`
+    console.error(reason)
+    return Promise.reject(reason)
+  }
 }
 
 function putBookContent(bookContent) {
@@ -134,7 +183,7 @@ function listBookmark(bookHash) {
   return db.bookmark.filter((data) => data.bookHash === bookHash).toArray()
 }
 function listBookmarkAll() {
-  return db.bookmark.orderBy("utime").toArray()
+  return db.bookmark.orderBy('utime').toArray()
 }
 function deleteBookmark(bookHash, cfi) {
   const wh = { bookHash, cfi }
@@ -186,5 +235,6 @@ export default {
   getBookPercentage,
   putDictMeta,
   getDictMeta,
-  listDictMeta
+  listDictMeta,
+  registRemoteDict
 }

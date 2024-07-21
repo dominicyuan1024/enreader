@@ -1,6 +1,6 @@
 import mitt from 'mitt'
 export const ebus = mitt()
-const NavMore="NavMore"
+const NavMore = 'NavMore'
 export const ename = {
-    NavMore
+  NavMore
 }

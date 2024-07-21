@@ -3,18 +3,31 @@
     <h3 class="page-header">我的</h3>
     <van-collapse v-model="activeNames">
       <van-collapse-item name="1" title="词典" icon="shop-o">
-        <van-uploader :after-read="uploadFileList" accept="*.mdx" multiple>
-          <van-button type="primary" icon="plus" size="small"></van-button>
-        </van-uploader>
-        <van-radio-group v-model="dictChecked" @change="usingDict">
-          <van-radio v-for="item in dictList" :name="item.hash" :key="item.hash">{{
-            item.title
-          }}</van-radio>
-        </van-radio-group>
+        <div class="setting-item">
+          <van-radio-group v-model="dictChecked" @change="usingDict">
+            <div class="dict-item" v-for="item in dictList" :key="item.hash">
+              {{ item.title }}
+              <van-button
+                v-if="item.remote"
+                type="primary"
+                icon="down"
+                size="small"
+                @click="downloadDict(item)"
+                >下载</van-button
+              >
+              <van-radio v-else :name="item.hash"></van-radio>
+            </div>
+          </van-radio-group>
+          <van-uploader :after-read="uploadFileList" accept="*.mdx" multiple>
+            <van-button type="primary" icon="plus" size="small">本地导入</van-button>
+          </van-uploader>
+        </div>
       </van-collapse-item>
       <van-collapse-item title="布局" name="2" icon="shop-o"> </van-collapse-item>
       <van-collapse-item title="安全" name="3" icon="shop-o">
-        <div>开发者模式 <van-switch v-model="devMode" @change="switchDevMode" /></div>
+        <div class="setting-item">
+          <div>开发者模式 <van-switch v-model="devMode" @change="switchDevMode" /></div>
+        </div>
       </van-collapse-item>
     </van-collapse>
   </div>
@@ -24,6 +37,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
+import axios from 'axios'
 import VConsole from 'vconsole'
 const activeNames = ref(['1', '3'])
 const devMode = ref(window.vconsole ? true : false)
@@ -97,10 +111,37 @@ async function uploadFileList(file) {
 function usingDict(data) {
   localStorage.setItem('dict-using-hash', data)
 }
-onMounted(() => {
+function downloadDict(dict) {
+  DB.registRemoteDict(dict.hash)
+    .then(() => {
+      dict.remote = false
+    })
+    .catch((err) => console.error('registRemoteDict error', dict, err))
+}
+onMounted(async () => {
   DB.listDictMeta()
     .then((res) => {
       dictList.splice(0, dictList.length, ...res)
+    })
+    .then(() => {
+      return axios.get('dict/default-dict-list.json')
+    })
+    .then((res) => {
+      if (res.status !== 200) {
+        return Promise.reject(`query dict/default-dict-list.json ${res.status}`)
+      }
+      return res
+    })
+    .then((res) => {
+      const dictMap = {}
+      dictList.forEach((item) => (dictMap[item.hash] = true))
+      res.data.forEach((item) => {
+        if (dictMap[item.hash]) {
+          return
+        }
+        const { hash, title } = item
+        dictList.push({ hash, title, remote: true })
+      })
     })
     .catch((err) => {
       console.error('listDictMeta', err)
@@ -108,12 +149,15 @@ onMounted(() => {
 })
 </script>
 
-<style>
-@media (min-width: 1024px) {
-  .about {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-  }
+<style scoped>
+.setting-item {
+  margin-left: 2rem;
+  border-left: 1px solid #aaa;
+  padding-left: 1rem;
+}
+.dict-item {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
 }
 </style>

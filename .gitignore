@@ -34,3 +34,5 @@ tests_output/
 .vscode
 
 dev-dist
+*.mdx
+*.mdd
