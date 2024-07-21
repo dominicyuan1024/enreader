@@ -39,7 +39,7 @@ import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
 import axios from 'axios'
 import VConsole from 'vconsole'
-const activeNames = ref(['1', '3'])
+const activeNames = ref(['1'])
 const devMode = ref(window.vconsole ? true : false)
 function switchDevMode(val) {
   localStorage.setItem('devMode', val)
@@ -152,8 +152,6 @@ onMounted(async () => {
 <style scoped>
 .setting-item {
   margin-left: 2rem;
-  border-left: 1px solid #aaa;
-  padding-left: 1rem;
 }
 .dict-item {
   margin-bottom: 1rem;

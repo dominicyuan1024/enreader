@@ -1,28 +1,17 @@
 <template>
   <main class="bookcase fix-footer fix-header">
     <h3 class="page-header">
-      书架<van-tag color="hsla(160, 100%, 37%, 1)" round size="small" style="margin-left: 5px;">{{ books.length }}</van-tag>
+      书架<van-tag color="hsla(160, 100%, 37%, 1)" round size="small" style="margin-left: 5px">{{
+        books.length
+      }}</van-tag>
     </h3>
     <div id="book-list">
       <van-grid column-num="3" :border="false">
-        <van-grid-item icon="photo-o" text="文字">
-          <div class="upload-book-btn">
-            <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
-              <p class="upload-book-btn-txt">
-                <van-button
-                  round
-                  type="success"
-                  color="rgba(200,200,200,1)"
-                  icon="plus"
-                ></van-button>
-              </p>
-            </van-uploader>
-          </div>
-        </van-grid-item>
         <van-grid-item v-for="item in books" :key="item.hash" icon="photo-o">
-          <div>
+          <div style="position: relative">
             <RouterLink :to="{ path: '/book', query: { hash: item.hash, title: item.title } }">
               <van-image
+                class="book-case-bookcover"
                 v-if="item.cover"
                 :src="item.cover"
                 fit="cover"
@@ -36,12 +25,39 @@
               color="hsla(160, 100%, 37%, 1)"
               :show-pivot="false"
             />
-            <van-text-ellipsis :content="item.title" :rows="item.ellipsisRow">*</van-text-ellipsis>
-            <!-- <van-text-ellipsis :content="'-' + item.author" rows="1" /> -->
+            <div class="book-editing" v-if="isEditingBook">
+              <van-button
+                color="hsla(2, 100%, 37%, 1)"
+                icon="delete"
+                @click="deleteBook(item)"
+              ></van-button>
+            </div>
           </div>
         </van-grid-item>
       </van-grid>
     </div>
+    <van-floating-bubble
+      :offset="btnAddBookOffset"
+      style="background-color: hsla(160, 100%, 37%, 1)"
+      icon="plus"
+      axis="xy"
+    >
+      <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
+        <van-icon name="plus"></van-icon>
+      </van-uploader>
+    </van-floating-bubble>
+    <van-floating-bubble
+      :offset="btnDelBookOffset"
+      :style="
+        isEditingBook
+          ? 'background-color: hsla(2, 100%, 37%, 1)'
+          : 'background-color: rgba(200,200,200)'
+      "
+      icon="delete"
+      axis="y"
+      @click="toggleIsEditingBook"
+    >
+    </van-floating-bubble>
   </main>
 </template>
 
@@ -49,8 +65,10 @@
 import Epub from 'epubjs'
 import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
-import { onUpdated, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { showLoadingToast } from 'vant'
+const btnAddBookOffset = { y: window.innerHeight - 180 }
+const btnDelBookOffset = { y: window.innerHeight - 120 }
 let books = reactive([])
 const uploadFileList = (file) => {
   if (!(file instanceof Array)) {
@@ -124,6 +142,11 @@ function deleteBook(book) {
     })
 }
 
+const isEditingBook = ref(false)
+function toggleIsEditingBook() {
+  isEditingBook.value = !isEditingBook.value
+}
+
 let loadingCtrl
 async function refreshBookcase() {
   loadingCtrl = showLoadingToast({
@@ -152,13 +175,6 @@ function sortBookcase(bookArr) {
   })
 }
 refreshBookcase()
-onUpdated(() => {
-  books.forEach((item) => {
-    if (!item.ellipsisRow) {
-      item.ellipsisRow = 1
-    }
-  })
-})
 </script>
 
 <style>
@@ -178,5 +194,13 @@ onUpdated(() => {
 }
 #book-list .van-grid-item__content--center {
   justify-content: end;
+}
+.book-editing {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(200, 200, 200, 0.7);
+  left: 0;
+  top: 0;
 }
 </style>
