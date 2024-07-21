@@ -37,16 +37,6 @@
       </van-grid>
     </div>
     <van-floating-bubble
-      :offset="btnAddBookOffset"
-      style="background-color: hsla(160, 100%, 37%, 1)"
-      icon="plus"
-      axis="xy"
-    >
-      <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
-        <van-icon name="plus"></van-icon>
-      </van-uploader>
-    </van-floating-bubble>
-    <van-floating-bubble
       :offset="btnDelBookOffset"
       :style="
         isEditingBook
@@ -57,6 +47,15 @@
       axis="y"
       @click="toggleIsEditingBook"
     >
+    </van-floating-bubble>
+    <van-floating-bubble
+      :offset="btnAddBookOffset"
+      style="background-color: hsla(160, 100%, 37%, 1)"
+      axis="y"
+    >
+      <van-uploader :after-read="uploadFileList" accept="application/epub+zip" multiple>
+        <van-icon style="font-size: 1.6rem" name="plus"></van-icon>
+      </van-uploader>
     </van-floating-bubble>
   </main>
 </template>
@@ -182,15 +181,12 @@ refreshBookcase()
   padding: 1rem;
   font-size: 12px;
 }
-.upload-book-btn {
+.load-book-btn {
   height: 100%;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 1.2rem;
-}
-.upload-book-btn-txt {
 }
 #book-list .van-grid-item__content--center {
   justify-content: end;
