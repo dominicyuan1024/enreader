@@ -25,12 +25,13 @@
               color="hsla(160, 100%, 37%, 1)"
               :show-pivot="false"
             />
-            <div class="book-editing" v-if="isEditingBook">
-              <van-button
+            <div class="absolute-cover book-editing" v-if="isEditingBook">
+              <van-icon
+                style="font-size: 2rem;"
                 color="hsla(2, 100%, 37%, 1)"
-                icon="delete"
+                name="delete"
                 @click="deleteBook(item)"
-              ></van-button>
+              ></van-icon>
             </div>
           </div>
         </van-grid-item>
@@ -193,12 +194,7 @@ refreshBookcase()
 }
 .book-editing {
   display: flex;
-  justify-content: flex-end;
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(200, 200, 200, 0.7);
-  left: 0;
-  top: 0;
+  justify-content: center;
+  align-items: center;
 }
 </style>

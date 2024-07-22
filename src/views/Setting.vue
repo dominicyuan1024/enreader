@@ -18,7 +18,7 @@
               <van-radio v-else :name="item.hash"></van-radio>
             </div>
           </van-radio-group>
-          <van-uploader :after-read="uploadFileList" accept="*.mdx" multiple>
+          <van-uploader class="dict-item" :after-read="uploadFileList" accept="*.mdx" multiple>
             <van-button type="primary" icon="plus" size="small">本地导入</van-button>
           </van-uploader>
         </div>
