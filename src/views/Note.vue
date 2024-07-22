@@ -22,10 +22,8 @@
       finished-text="没有更多了"
       @load="onLoad"
     >
-      <van-cell v-for="item,idx in noteList" :key="item.id" :title="item.content">
-        <p>
-          {{ item.ctx }}
-        </p>
+      <van-cell v-for="(item, idx) in noteList" :key="item.id" :title="item.content">
+        <p v-html="item.ctxHtml"></p>
         <div v-if="isEditing" class="absolute-cover align-center">
           <van-icon
             name="delete"
@@ -51,6 +49,12 @@ function viewNote() {
     .then((data) => {
       if (typeof data.splice === 'function') {
         data.sort((pre, cur) => cur.utime - pre.utime)
+        data.forEach((item) => {
+          item.ctxHtml = item.ctx.replace(
+            ` ${item.content}`,
+            ` <span style="border-bottom:1px solid;">${item.content}</span>`
+          )
+        })
         noteList.splice(0, noteList.length + 1, ...data)
       }
     })
@@ -65,14 +69,14 @@ function deleteNote(idx) {
   const { bookHash, cfi } = noteList[idx]
   DB.deleteBookmark(bookHash, cfi)
     .then((data) => {
-      noteList.splice(idx,1)
+      noteList.splice(idx, 1)
       console.log('deleteNote', data)
     })
     .catch((err) => console.error('deleteNote', err))
 }
 </script>
 <style scoped>
-.align-center{
+.align-center {
   display: flex;
   justify-content: flex-end;
   align-items: center;
