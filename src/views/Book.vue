@@ -11,7 +11,7 @@
         </p>
       </div>
       <van-popup v-model:show="showNav" position="left">
-        <van-list disabled style="width: 85vw; padding-top: 2.5rem">
+        <van-list disabled style="min-height: 100vh; width: 85vw; padding-top: 2.5rem">
           <van-cell
             v-for="item in navList"
             :key="item.href"
@@ -23,7 +23,7 @@
         </van-list>
       </van-popup>
       <van-popup v-model:show="showMark" position="left">
-        <van-list disabled style="width: 85vw; padding-top: 2.5rem">
+        <van-list disabled style="min-height: 100vh; width: 85vw; padding-top: 2.5rem">
           <van-cell
             v-for="item in markList"
             :key="item.id"
@@ -36,6 +36,36 @@
       </van-popup>
       <van-popup v-model:show="showTranslate" position="left">
         <div style="width: 85vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
+      </van-popup>
+      <van-popup v-model:show="showTheme" position="bottom">
+        <div style="padding: 1rem">
+          <div style="padding: 1rem; display: flex; align-items: center">
+            <span style="flex-shrink: 0">字体大小<br />{{ curFontSize }}px</span>
+            <van-slider
+              v-model="curFontSize"
+              step="1"
+              :max="maxFontSize"
+              :min="minFontSize"
+              @change="setFontSize"
+            >
+            </van-slider>
+          </div>
+          <van-radio-group v-model="curTheme" @change="setTheme">
+            <van-cell-group inset>
+              <van-cell
+                clickable
+                v-for="item in themeList"
+                :key="item.name"
+                :title="item.alias"
+                @click="curTheme = item.name"
+              >
+                <template #right-icon>
+                  <van-radio :name="item.name"></van-radio>
+                </template>
+              </van-cell>
+            </van-cell-group>
+          </van-radio-group>
+        </div>
       </van-popup>
       <van-popup v-model:show="showImage" position="top">
         <div class="clicked-image-box">
@@ -64,8 +94,8 @@
           type="primary"
           icon="setting-o"
           color="hsla(160, 100%, 37%, 1)"
-          @click="viewMark"
-          >设置</van-button
+          @click="showThemeEditor"
+          >字体/风格</van-button
         >
         <div class="triangle"></div>
       </div>
@@ -113,12 +143,15 @@ const bookTitle = ref('')
 const chaptertitle = ref('')
 const clickedImageSrc = ref('')
 const showImage = ref(false)
-
-const markActions = [
-  { handler: clearHighlight, text: '', icon: 'delete-o' },
-  { handler: handleTranslate, text: '', icon: 'question-o' },
-  { handler: handleCopy, text: 'copy', icon: '' }
-]
+const showTheme = ref(false)
+const curTheme = ref('Default')
+let defaultFontSize = window.getComputedStyle(document.body).fontSize
+defaultFontSize = defaultFontSize.replace('px', '')
+defaultFontSize = defaultFontSize ? defaultFontSize : 16
+console.log('defaultFontSize', defaultFontSize)
+const curFontSize = ref(defaultFontSize)
+const minFontSize = 8
+const maxFontSize = 36
 const themeList = [
   {
     alias: '默认',
@@ -161,6 +194,37 @@ const themeList = [
     }
   }
 ]
+let cfiBeforShowTheme = ''
+function showThemeEditor() {
+  DB.getBookCfi(bookHash).then((res) => {
+    showTheme.value = true
+    cfiBeforShowTheme = res
+  })
+}
+function setTheme(name) {
+  console.log(`set theme ${name}`)
+  const idx = themeList.findIndex((item) => item.name === name)
+  const theme = themeList[idx]
+  rendition.themes.register(theme.name, theme.style)
+  rendition.themes.select(name)
+  showTheme.value = false
+  redrawAnnotations()
+}
+function setFontSize(val) {
+  rendition.themes.fontSize(`${val}px`)
+  rendition.display(cfiBeforShowTheme)
+}
+
+const markActions = [
+  { handler: clearHighlight, text: '', icon: 'delete-o' },
+  { handler: handleTranslate, text: '', icon: 'question-o' },
+  { handler: handleCopy, text: 'copy', icon: '' }
+]
+
+function redrawAnnotations() {
+  rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
+}
+
 let bookHash
 let router
 async function renderBook() {
@@ -210,7 +274,7 @@ async function renderBook() {
     .then(() => {
       highlightHistory()
       registTheme()
-      rendition.themes.select('Default')
+      rendition.themes.select(curTheme.value)
       return ebook.locations.generate(1600)
     })
     .then(() => {
@@ -563,11 +627,12 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 .book-tool {
+  background-color: hsla(160, 100%, 37%, 1);
   margin-right: 0.5rem;
   margin-bottom: 2px;
   display: flex;
   flex-direction: column;
-  align-items: end;
+  align-items: start;
   position: absolute;
   right: 0;
   bottom: 0;
@@ -595,7 +660,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   max-height: 90vh;
-  background-color: #000;
+  background-color: rgba(0, 0, 0, 0);
   padding: 1rem;
 }
 .clicked-image-box img {
