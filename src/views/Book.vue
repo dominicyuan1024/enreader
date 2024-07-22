@@ -37,6 +37,11 @@
       <van-popup v-model:show="showTranslate" position="left">
         <div style="width: 85vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
       </van-popup>
+      <van-popup v-model:show="showImage" position="top">
+        <div class="clicked-image-box">
+          <img :src="clickedImageSrc" />
+        </div>
+      </van-popup>
       <div class="book-tool" v-if="isShowTool">
         <van-button
           square
@@ -106,6 +111,8 @@ const isShowTool = ref(false)
 const isShowMarkPopover = ref(false)
 const bookTitle = ref('')
 const chaptertitle = ref('')
+const clickedImageSrc = ref('')
+const showImage = ref(false)
 
 const markActions = [
   { handler: clearHighlight, text: '', icon: 'delete-o' },
@@ -192,6 +199,8 @@ async function renderBook() {
     preventBookDefaultEvent(iframeView.document)
     iframeView.document.removeEventListener('click', posiMarkPopover)
     iframeView.document.addEventListener('click', posiMarkPopover)
+    iframeView.document.removeEventListener('click', showClickedImg)
+    iframeView.document.addEventListener('click', showClickedImg)
   })
   if (!cfi) {
     cfi = await DB.getBookCfi(bookHash)
@@ -213,6 +222,15 @@ async function renderBook() {
   rendition.on('markClicked', onHighlightClick)
   rendition.on('selected', highlightSelected)
   rendition.on('relocated', onProgress)
+}
+function showClickedImg(evt) {
+  if (evt.target.tagName === 'image' && evt.target.href) {
+    return
+  }
+  if (evt.target.tagName === 'IMG' && evt.target.src) {
+    clickedImageSrc.value = evt.target.src
+    showImage.value = true
+  }
 }
 function hlTheme() {
   return {
@@ -569,6 +587,21 @@ onUnmounted(() => {
 }
 #page-tool .button-wrap {
   margin: 2px;
+}
+.clicked-image-box {
+  width: 100vw;
+  display: flex;
+  min-height: 50vh;
+  justify-content: center;
+  align-items: center;
+  max-height: 90vh;
+  background-color: #000;
+  padding: 1rem;
+}
+.clicked-image-box img {
+  display: inline-block;
+  max-width: 100%;
+  max-height: 100%;
 }
 </style>
 <style>
