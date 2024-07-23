@@ -38,11 +38,11 @@
         <div style="width: 85vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
       </van-popup>
       <van-popup v-model:show="showTheme" position="bottom">
+        <div style="padding: 1rem">笔记 <span></span></div>
         <div style="padding: 1rem">
           <div style="padding: 1rem; display: flex; align-items: center">
-            <span style="flex-shrink: 0; text-align: right; margin-right: 1rem"
-              >字体大小<br />{{ curFontSize }}px</span
-            >
+            <span style="margin-right: 0.5rem">{{ curFontSize }}</span>
+            <span style="flex-shrink: 0; text-align: right; margin-right: 1rem">A-</span>
             <van-slider
               v-model="curFontSize"
               step="1"
@@ -51,12 +51,14 @@
               @change="setFontSize"
             >
             </van-slider>
+            <span style="flex-shrink: 0; text-align: right; margin-left: 1rem">A+</span>
           </div>
           <van-radio-group v-model="curTheme" @change="setTheme">
             <van-cell-group inset>
               <van-cell
                 clickable
                 v-for="item in themeList"
+                :style="genThemeStyle(item)"
                 :key="item.name"
                 :title="item.alias"
                 @click="curTheme = item.name"
@@ -168,28 +170,6 @@ const themeList = [
     }
   },
   {
-    alias: '雅致',
-    name: 'Gold',
-    style: {
-      body: {
-        'padding-bottom': '1rem!important',
-        color: '#5c5b56',
-        background: '#c6c2b6'
-      }
-    }
-  },
-  {
-    alias: '护眼',
-    name: 'Eye',
-    style: {
-      body: {
-        'padding-bottom': '1rem!important',
-        color: '#cecece',
-        background: '#080'
-      }
-    }
-  },
-  {
     alias: '夜晚',
     name: 'Night',
     style: {
@@ -208,6 +188,28 @@ const themeList = [
         'padding-bottom': '1rem!important',
         background: '#fff',
         color: '#000'
+      }
+    }
+  },
+  {
+    alias: '雅致',
+    name: 'Gold',
+    style: {
+      body: {
+        'padding-bottom': '1rem!important',
+        color: '#5c5b56',
+        background: '#c6c2b6'
+      }
+    }
+  },
+  {
+    alias: '护眼',
+    name: 'Eye',
+    style: {
+      body: {
+        'padding-bottom': '1rem!important',
+        color: '#cecece',
+        background: '#080'
       }
     }
   }
@@ -242,7 +244,6 @@ function setTheme(name) {
   for (let rule in theme) {
     rendition.themes.override(rule, theme[rule], 1)
   }
-  showTheme.value = false
   redrawAnnotations()
 }
 function setFontSize(val) {
@@ -250,7 +251,10 @@ function setFontSize(val) {
   rendition.display(cfiBeforShowTheme)
   redrawAnnotations()
 }
-
+function genThemeStyle(theme) {
+  const style = theme.style.body
+  return `color:${style.color};background:${style.background};`
+}
 const markActions = [
   { handler: clearHighlight, text: '', icon: 'delete-o' },
   { handler: handleTranslate, text: '', icon: 'question-o' },
@@ -333,7 +337,6 @@ async function renderBook() {
     })
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
-  rendition.themes.default(hlTheme())
   rendition.on('markClicked', onHighlightClick)
   rendition.on('selected', highlightSelected)
   rendition.on('relocated', onProgress)
@@ -345,18 +348,6 @@ function showClickedImg(evt) {
   if (evt.target.tagName === 'IMG' && evt.target.src) {
     clickedImageSrc.value = evt.target.src
     showImage.value = true
-  }
-}
-function hlTheme() {
-  return {
-    '::selection': {
-      background: 'rgba(255,255,0, 1)'
-    },
-    '.epubjs-hl': {
-      fill: 'yellow',
-      'fill-opacity': '0.3',
-      'mix-blend-mode': 'multiply'
-    }
   }
 }
 function highlightHistory() {
@@ -485,10 +476,7 @@ function onProgress(location) {
     .catch((e) => console.error('putBookCfi', bookHash, e))
 }
 
-function getSelectCtx(range) {
-  const txt = range.commonAncestorContainer.data
-  const startOffset = range.startOffset
-  const endOffset = range.endOffset
+function getSelectCtx(txt, startOffset, endOffset) {
   let ctxStart = 0
   let ctxEnd = txt.length
   const alphabet = [..."abcdefghijklmnopqrstuvwxyz-—'’ 0123456789"]
@@ -510,33 +498,44 @@ function getSelectCtx(range) {
   return txt.substring(ctxStart, ctxEnd).trim()
 }
 function highlightSelected(cfiRange, contents) {
-  contents.window.getSelection().removeAllRanges()
-  ebook
-    .getRange(cfiRange)
-    .then((range) => {
-      const txt = range ? range.toString().trim() : ''
-      if (!txt) {
-        return
-      }
-      const exist = markList.filter((item) => {
-        return item.cfi == cfiRange && item.content == txt
-      })
-      if (exist.length) {
-        return
-      }
-      const ctx = getSelectCtx(range)
-      return DB.putBookmark({
-        bookHash,
-        cfi: cfiRange,
-        content: txt,
-        description: '',
-        ctx: ctx
-      })
-    })
+  const selection = contents.window.getSelection()
+  const range = selection.getRangeAt(0)
+  const txt = range ? range.toString().trim() : ''
+  if (!txt) {
+    return
+  }
+  const exist = markList.filter((item) => {
+    return item.cfi == cfiRange && item.content == txt
+  })
+  if (exist.length) {
+    return
+  }
+  const ctx = getSelectCtx(range.commonAncestorContainer.data, range.startOffset, range.endOffset)
+  selection.removeAllRanges()
+  DB.putBookmark({
+    bookHash,
+    cfi: cfiRange,
+    content: txt,
+    description: '',
+    ctx: ctx
+  })
     .then((data) => {
       if (!data) return
       rendition.annotations.highlight(cfiRange, {})
-      markList.push(data)
+      return markList.push(data)
+    })
+    .then(() => {
+      const position = range.getBoundingClientRect()
+      clickHightLightCfi = cfiRange
+      clickHightLightRange = range
+      if (range) {
+        isClickHightLight = true
+      }
+      let left = position.left+position.width/2
+      const pageWith = window.document.body.clientWidth
+      const near = Math.floor(left/pageWith)
+      left = left - pageWith*near
+      showMarkTool(true, left, position.bottom)
     })
     .catch((err) => console.error('highlight', cfiRange, err))
 }
@@ -612,11 +611,6 @@ function preventBookDefaultEvent(doc) {
     doc.addEventListener(ename, preventDefaultHandler, {
       passive: false
     })
-  })
-}
-function registTheme() {
-  themeList.forEach((theme) => {
-    rendition.themes.register(theme.name, theme.style)
   })
 }
 function viewProgress(percentage) {
