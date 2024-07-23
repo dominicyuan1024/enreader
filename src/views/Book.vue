@@ -22,8 +22,8 @@
           </van-cell>
         </van-list>
       </van-popup>
-      <van-popup v-model:show="showMark" position="left">
-        <van-list disabled style="min-height: 100vh; width: 85vw; padding-top: 2.5rem">
+      <van-popup v-model:show="showMark" position="top">
+        <van-list disabled style="width: 100vw; max-height: 85vh; padding-top: 2.5rem">
           <van-cell
             v-for="item in markList"
             :key="item.id"
@@ -34,11 +34,14 @@
           </van-cell>
         </van-list>
       </van-popup>
-      <van-popup v-model:show="showTranslate" position="left">
-        <div style="width: 85vw; padding: 2.5rem" id="translated" v-html="translateInfo"></div>
+      <van-popup v-model:show="showTranslate" position="top">
+        <div
+          style="width: 100vw; max-height: 85vh; padding: 2rem; padding-right: 1rem"
+          id="translated"
+          v-html="translateInfo"
+        ></div>
       </van-popup>
       <van-popup v-model:show="showTheme" position="bottom">
-        <div style="padding: 1rem">笔记 <span></span></div>
         <div style="padding: 1rem">
           <div style="padding: 1rem; display: flex; align-items: center">
             <span style="margin-right: 0.5rem">{{ curFontSize }}</span>
@@ -619,6 +622,7 @@ function viewProgress(percentage) {
 }
 function showTool() {
   isShowTool.value = !isShowTool.value
+  isShowTool.value ? showMarkTool(false) : null
 }
 onMounted(async () => {
   ebus.on(ename.NavMore, showTool)
