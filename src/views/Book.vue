@@ -152,12 +152,13 @@ const chaptertitle = ref('')
 const clickedImageSrc = ref('')
 const showImage = ref(false)
 const showTheme = ref(false)
-const curTheme = ref('Default')
+const storedTheme = localStorage.getItem('book-theme')
+const curTheme = ref(storedTheme ? storedTheme : 'Default')
+const storedFontSize = localStorage.getItem('book-font-size')
 let defaultFontSize = window.getComputedStyle(document.body).fontSize
 defaultFontSize = defaultFontSize.replace('px', '')
 defaultFontSize = defaultFontSize ? defaultFontSize : 16
-console.log('defaultFontSize', defaultFontSize)
-const curFontSize = ref(defaultFontSize)
+const curFontSize = ref(storedFontSize ? storedFontSize : defaultFontSize)
 const minFontSize = 8
 const maxFontSize = 36
 const themeList = [
@@ -248,11 +249,13 @@ function setTheme(name) {
     rendition.themes.override(rule, theme[rule], 1)
   }
   redrawAnnotations()
+  localStorage.setItem('book-theme', name)
 }
 function setFontSize(val) {
   rendition.themes.fontSize(`${val}px`)
   rendition.display(cfiBeforShowTheme)
   redrawAnnotations()
+  localStorage.setItem('book-font-size', val)
 }
 function genThemeStyle(theme) {
   const style = theme.style.body
@@ -333,6 +336,7 @@ async function renderBook() {
     .then(() => {
       highlightHistory()
       setTheme(curTheme.value)
+      setFontSize(curFontSize.value)
       return ebook.locations.generate(1600)
     })
     .then(() => {
