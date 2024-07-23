@@ -105,6 +105,7 @@
         <div v-for="item in markActions" class="button-wrap" :key="item.text">
           <van-button
             square
+            size="small"
             type="primary"
             :icon="item.icon"
             color="hsla(160, 100%, 37%, 1)"
@@ -197,9 +198,21 @@ const themeList = [
   }
 ]
 let cfiBeforShowTheme = ''
-function showMarkTool(isShow) {
+function showMarkTool(isShow = false, left = 0, top = 0) {
+  const el = document.querySelector('#mark-tool')
+  const rightBorder = left + el.offsetWidth
+  if (rightBorder > window.innerWidth) {
+    el.style.left = left - el.offsetWidth + 'px'
+    el.classList.remove('posi-left')
+    el.classList.add('posi-right')
+  } else {
+    el.style.left = left + 'px'
+    el.classList.remove('posi-right')
+    el.classList.add('posi-left')
+  }
+  el.style.top = top + 'px'
   const zindex = isShow ? 1 : -1
-  document.querySelector('#mark-tool').style.zIndex = zindex
+  el.style.zIndex = zindex
 }
 function showThemeEditor() {
   DB.getBookCfi(bookHash).then((res) => {
@@ -260,13 +273,13 @@ async function renderBook() {
     width: '100%',
     height: '100%',
     spread: false // 是否显示双页
+    // infinite: true // 是否无限翻页
     // ignoreClass?: string; // 忽略类名
     // view?: 'iframe' | Object | Function; // 视图容器
     // minSpreadWidth?: number; // 最小触发双页的宽度
     // resizeOnOrientationChange?: boolean; // 在窗口 resize 时调整内容尺寸
     // script?: string; // 注入到 View 中的 js 代码
     // stylesheet?: string; // 注入到 View 中的 css 样式
-    // infinite?: boolean; // 是否无限翻页
     // overflow?: string; // 设置视图的 CSS overflow 属性
     // defaultDirection?: string; // 阅读方向
     // allowScriptedContent?: boolean; // iframe 沙盒是否能够执行 js
@@ -351,20 +364,7 @@ function onHighlightClick(cfiRange) {
 function posiMarkPopover(evt) {
   if (isClickHightLight && clickHightLightRange) {
     isClickHightLight = false
-    const el = document.querySelector('#mark-tool')
-    const rightBorder = evt.screenX + el.offsetWidth
-    if (rightBorder > window.innerWidth) {
-      el.style.left = evt.screenX - el.offsetWidth + 'px'
-      el.classList.remove('posi-left')
-      el.classList.add('posi-right')
-    } else {
-      el.style.left = evt.screenX + 'px'
-      el.classList.remove('posi-right')
-      el.classList.add('posi-left')
-    }
-    el.style.top = evt.pageY + 'px'
-    showMarkTool(true)
-    return
+    showMarkTool(true, evt.screenX, evt.pageY)
   } else {
     showMarkTool(false)
     clickHightLightRange = undefined
@@ -378,10 +378,8 @@ function clearHighlight(item, evt) {
   DB.deleteBookmark(bookHash, clickHightLightCfi)
     .then((data) => {
       console.log('deleteBookmark', data)
-      rendition.manager.views.forEach((item) => {
-        item.unhighlight(clickHightLightCfi)
-        showMarkTool(false)
-      })
+      rendition.annotations.remove(clickHightLightCfi)
+      showMarkTool(false)
     })
     .catch((err) => console.error('clearHighlight', err))
 }
@@ -698,8 +696,11 @@ onUnmounted(() => {
 .posi-right .triangle {
   right: 0;
 }
+#mark-tool {
+  background-color: hsla(160, 100%, 37%, 1);
+}
 #mark-tool .button-wrap + .button-wrap {
-  border-left: 1px solid #fff;
+  border-left: 1px solid hsla(160, 100%, 34%, 1);
 }
 .clicked-image-box {
   width: 100vw;
