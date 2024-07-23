@@ -40,7 +40,9 @@
       <van-popup v-model:show="showTheme" position="bottom">
         <div style="padding: 1rem">
           <div style="padding: 1rem; display: flex; align-items: center">
-            <span style="flex-shrink: 0">字体大小<br />{{ curFontSize }}px</span>
+            <span style="flex-shrink: 0; text-align: right; margin-right: 1rem"
+              >字体大小<br />{{ curFontSize }}px</span
+            >
             <van-slider
               v-model="curFontSize"
               step="1"
@@ -99,10 +101,9 @@
         >
         <div class="triangle"></div>
       </div>
-      <div id="page-tool" v-show="isShowMarkPopover">
+      <div id="mark-tool" style="z-index: -1">
         <div v-for="item in markActions" class="button-wrap" :key="item.text">
           <van-button
-            hairline
             square
             type="primary"
             :icon="item.icon"
@@ -111,6 +112,7 @@
             >{{ item.text }}</van-button
           >
         </div>
+        <div class="triangle"></div>
       </div>
     </div>
   </main>
@@ -124,6 +126,7 @@ import { useRouter } from 'vue-router'
 import { lookup } from '../db/translate.js'
 import { ebus, ename } from '../stores/events.js'
 import { copyToClipboard } from '@/stores/copyToClipboard.js'
+import Hammer from 'hammerjs'
 
 let usingDict
 let ebook
@@ -138,7 +141,6 @@ const showTranslate = ref(false)
 const translateInfo = ref('')
 const bookProgress = ref(0)
 const isShowTool = ref(false)
-const isShowMarkPopover = ref(false)
 const bookTitle = ref('')
 const chaptertitle = ref('')
 const clickedImageSrc = ref('')
@@ -179,7 +181,7 @@ const themeList = [
     style: {
       body: {
         color: '#404c42',
-        background: '#a9c1a9'
+        background: '#ccc58f'
       }
     }
   },
@@ -195,6 +197,10 @@ const themeList = [
   }
 ]
 let cfiBeforShowTheme = ''
+function showMarkTool(isShow) {
+  const zindex = isShow ? 1 : -1
+  document.querySelector('#mark-tool').style.zIndex = zindex
+}
 function showThemeEditor() {
   DB.getBookCfi(bookHash).then((res) => {
     showTheme.value = true
@@ -203,9 +209,6 @@ function showThemeEditor() {
 }
 function setTheme(name) {
   console.log(`set theme ${name}`)
-  const idx = themeList.findIndex((item) => item.name === name)
-  const theme = themeList[idx]
-  rendition.themes.register(theme.name, theme.style)
   rendition.themes.select(name)
   showTheme.value = false
   redrawAnnotations()
@@ -223,6 +226,18 @@ const markActions = [
 
 function redrawAnnotations() {
   rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
+}
+
+const touchBookEvents = 'swiperight swipeleft'
+function touchBook(evt) {
+  switch (evt.type) {
+    case 'swiperight':
+      rendition.prev()
+      break
+    case 'swipeleft':
+      rendition.next()
+      break
+  }
 }
 
 let bookHash
@@ -265,11 +280,15 @@ async function renderBook() {
     iframeView.document.addEventListener('click', posiMarkPopover)
     iframeView.document.removeEventListener('click', showClickedImg)
     iframeView.document.addEventListener('click', showClickedImg)
+    const mc = new Hammer(iframeView.document)
+    mc.on(touchBookEvents, touchBook)
   })
+
   if (!cfi) {
     cfi = await DB.getBookCfi(bookHash)
   }
   cfi ? rendition.display(cfi) : rendition.display()
+
   ebook.ready
     .then(() => {
       highlightHistory()
@@ -331,14 +350,23 @@ function onHighlightClick(cfiRange) {
 }
 function posiMarkPopover(evt) {
   if (isClickHightLight && clickHightLightRange) {
-    const el = document.querySelector('#page-tool')
-    el.style.right = '0'
-    el.style.top = evt.pageY + 'px'
-    isShowMarkPopover.value = true
     isClickHightLight = false
+    const el = document.querySelector('#mark-tool')
+    const rightBorder = evt.screenX + el.offsetWidth
+    if (rightBorder > window.innerWidth) {
+      el.style.left = evt.screenX - el.offsetWidth + 'px'
+      el.classList.remove('posi-left')
+      el.classList.add('posi-right')
+    } else {
+      el.style.left = evt.screenX + 'px'
+      el.classList.remove('posi-right')
+      el.classList.add('posi-left')
+    }
+    el.style.top = evt.pageY + 'px'
+    showMarkTool(true)
     return
   } else {
-    isShowMarkPopover.value = false
+    showMarkTool(false)
     clickHightLightRange = undefined
     clickHightLightCfi = undefined
   }
@@ -352,7 +380,7 @@ function clearHighlight(item, evt) {
       console.log('deleteBookmark', data)
       rendition.manager.views.forEach((item) => {
         item.unhighlight(clickHightLightCfi)
-        isShowMarkPopover.value = false
+        showMarkTool(false)
       })
     })
     .catch((err) => console.error('clearHighlight', err))
@@ -387,7 +415,7 @@ function handleTranslate() {
 function handleCopy() {
   copyToClipboard(clickHightLightRange.toString())
     .then(() => {
-      isShowMarkPopover.value = false
+      showMarkTool(false)
     })
     .catch((err) => console.error('copyToClipboard', err))
 }
@@ -635,23 +663,43 @@ onUnmounted(() => {
   align-items: start;
   position: absolute;
   right: 0;
-  bottom: 0;
+  bottom: 0.5rem;
 }
-.triangle {
+.book-tool .triangle {
   width: 0;
   height: 0;
   border-top: 0.5rem solid hsla(160, 100%, 37%, 1);
   border-right: 0.5rem solid transparent;
   border-left: 0.5rem solid transparent;
   margin-right: 0.5rem;
+  position: absolute;
+  bottom: -0.5rem;
+  right: 0;
 }
-#page-tool {
+#mark-tool {
   display: flex;
   position: fixed;
   z-index: 1000;
+  margin-top: 1rem;
 }
-#page-tool .button-wrap {
-  margin: 2px;
+#mark-tool .triangle {
+  width: 0;
+  height: 0;
+  border-bottom: 0.5rem solid hsla(160, 100%, 37%, 1);
+  border-right: 0.5rem solid transparent;
+  border-left: 0.5rem solid transparent;
+  margin-right: 0.5rem;
+  position: absolute;
+  top: -0.5rem;
+}
+.posi-left .triangle {
+  left: 0;
+}
+.posi-right .triangle {
+  right: 0;
+}
+#mark-tool .button-wrap + .button-wrap {
+  border-left: 1px solid #fff;
 }
 .clicked-image-box {
   width: 100vw;

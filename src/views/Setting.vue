@@ -118,7 +118,10 @@ function downloadDict(dict) {
       dict.remote = false
       dict.loading = false
     })
-    .catch((err) => console.error('registRemoteDict error', dict, err))
+    .catch((err) => {
+      dict.loading = false
+      console.error('registRemoteDict error', dict, err)
+    })
 }
 onMounted(async () => {
   DB.listDictMeta()
