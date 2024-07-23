@@ -531,11 +531,12 @@ function highlightSelected(cfiRange, contents) {
       if (range) {
         isClickHightLight = true
       }
-      let left = position.left+position.width/2
+      let left = position.left + position.width / 2
       const pageWith = window.document.body.clientWidth
-      const near = Math.floor(left/pageWith)
-      left = left - pageWith*near
-      showMarkTool(true, left, position.bottom)
+      const near = Math.floor(left / pageWith)
+      left = left - pageWith * near
+      const top = position.top + position.height / 2
+      showMarkTool(true, left, top)
     })
     .catch((err) => console.error('highlight', cfiRange, err))
 }
