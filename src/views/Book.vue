@@ -161,6 +161,7 @@ const themeList = [
     name: 'Default',
     style: {
       body: {
+        'padding-bottom': '1rem!important',
         color: '#000',
         background: '#ccc58f'
       }
@@ -171,6 +172,7 @@ const themeList = [
     name: 'Gold',
     style: {
       body: {
+        'padding-bottom': '1rem!important',
         color: '#5c5b56',
         background: '#c6c2b6'
       }
@@ -181,8 +183,9 @@ const themeList = [
     name: 'Eye',
     style: {
       body: {
-        color: '#404c42',
-        background: '#ccc58f'
+        'padding-bottom': '1rem!important',
+        color: '#cecece',
+        background: '#080'
       }
     }
   },
@@ -191,8 +194,20 @@ const themeList = [
     name: 'Night',
     style: {
       body: {
+        'padding-bottom': '1rem!important',
         color: '#cecece',
         background: '#000000'
+      }
+    }
+  },
+  {
+    alias: '黑白',
+    name: 'Day',
+    style: {
+      body: {
+        'padding-bottom': '1rem!important',
+        background: '#fff',
+        color: '#000'
       }
     }
   }
@@ -222,13 +237,18 @@ function showThemeEditor() {
 }
 function setTheme(name) {
   console.log(`set theme ${name}`)
-  rendition.themes.select(name)
+  const idx = themeList.findIndex((item) => item.name === name)
+  const theme = themeList[idx].style.body
+  for (let rule in theme) {
+    rendition.themes.override(rule, theme[rule], 1)
+  }
   showTheme.value = false
   redrawAnnotations()
 }
 function setFontSize(val) {
   rendition.themes.fontSize(`${val}px`)
   rendition.display(cfiBeforShowTheme)
+  redrawAnnotations()
 }
 
 const markActions = [
@@ -305,8 +325,7 @@ async function renderBook() {
   ebook.ready
     .then(() => {
       highlightHistory()
-      registTheme()
-      rendition.themes.select(curTheme.value)
+      setTheme(curTheme.value)
       return ebook.locations.generate(1600)
     })
     .then(() => {
@@ -358,15 +377,21 @@ function onHighlightClick(cfiRange) {
   ebook.getRange(cfiRange).then((range) => {
     clickHightLightCfi = cfiRange
     clickHightLightRange = range
-    isClickHightLight = true
+    if (range) {
+      isClickHightLight = true
+    }
   })
 }
 function posiMarkPopover(evt) {
+  const id = new Date().getTime()
+  console.log(`${id} hl`, isClickHightLight)
+  console.log(`${id} hlr`, clickHightLightRange)
   if (isClickHightLight && clickHightLightRange) {
     isClickHightLight = false
     showMarkTool(true, evt.screenX, evt.pageY)
   } else {
     showMarkTool(false)
+    isClickHightLight = false
     clickHightLightRange = undefined
     clickHightLightCfi = undefined
   }
@@ -379,6 +404,9 @@ function clearHighlight(item, evt) {
     .then((data) => {
       console.log('deleteBookmark', data)
       rendition.annotations.remove(clickHightLightCfi)
+      rendition.manager.views.forEach((item) => {
+        item.unhighlight(clickHightLightCfi)
+      })
       showMarkTool(false)
     })
     .catch((err) => console.error('clearHighlight', err))
@@ -506,6 +534,7 @@ function highlightSelected(cfiRange, contents) {
       })
     })
     .then((data) => {
+      if (!data) return
       rendition.annotations.highlight(cfiRange, {})
       markList.push(data)
     })
@@ -587,7 +616,6 @@ function preventBookDefaultEvent(doc) {
 }
 function registTheme() {
   themeList.forEach((theme) => {
-    theme.style.body['padding-bottom'] = '1rem!important'
     rendition.themes.register(theme.name, theme.style)
   })
 }
@@ -720,6 +748,7 @@ onUnmounted(() => {
 </style>
 <style>
 #translated ol {
+  min-height: 100vh;
   list-style-type: decimal;
 }
 #translated ul {
