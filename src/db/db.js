@@ -11,7 +11,7 @@ const db = new Proxy(originDb, {
         bookMeta: '++id, &hash, hashAlg, title, author, cover, progress, utime',
         bookContent: '++id, &hash, content, filename, format, size, utime',
         dictMeta: '++id, &hash, hashAlg, title, using, utime',
-        bookmark: '++id, bookHash, content, description, cfi, ctx, ctime, utime'
+        bookmark: '++id, bookHash, content, description, cfi, ctx, defEN, defCN, ctime, utime'
       })
       stored = true
     }
@@ -65,11 +65,18 @@ function getDictMeta(hash) {
 function listDictMeta() {
   return db.dictMeta.orderBy('id').toArray()
 }
-async function registRemoteDict(hash) {
+async function getRemoteDictInfo(hash) {
   const remoteDict = await axios.get('dict/default-dict-list.json')
-  const dictInfo = remoteDict.data.filter((item) => item.hash === hash)[0]
-  const { url, title } = dictInfo
+  const dictInfo = remoteDict.data.filter((item) => item.hash === hash)
+  if (!dictInfo.length) {
+    throw new Error(`getRemoteDictInfo ${hash} notfound`)
+  }
+  return dictInfo[0]
+}
 
+async function registRemoteDict(hash) {
+  const dictInfo = await getRemoteDictInfo(hash)
+  const { url, title } = dictInfo
   let existDict = await getDictMeta(hash)
   if (existDict && existDict.hash === hash) {
     console.log('already exist dict meta', existDict)
@@ -236,5 +243,6 @@ export default {
   putDictMeta,
   getDictMeta,
   listDictMeta,
-  registRemoteDict
+  registRemoteDict,
+  getRemoteDictInfo
 }

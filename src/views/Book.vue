@@ -35,11 +35,7 @@
         </van-list>
       </van-popup>
       <van-popup v-model:show="showTranslate" position="top">
-        <div
-          style="width: 100vw; max-height: 85vh; padding: 2rem; padding-right: 1rem"
-          id="translated"
-          v-html="translateInfo"
-        ></div>
+        <iframe :srcdoc="translateInfo" id="translated"></iframe>
       </van-popup>
       <van-popup v-model:show="showTheme" position="bottom">
         <div style="padding: 1rem">
@@ -129,12 +125,10 @@ import Epub from 'epubjs'
 import DB from '../db/db.js'
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { lookup } from '../db/translate.js'
+import { lookup, generateHtml } from '../db/translate.js'
 import { ebus, ename } from '../stores/events.js'
 import { copyToClipboard } from '@/stores/copyToClipboard.js'
-import Hammer from 'hammerjs'
 
-let usingDict
 let ebook
 let rendition
 let navList = reactive([])
@@ -286,7 +280,7 @@ async function renderBook() {
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
   rendition.on('markClicked', onHighlightClick)
-  rendition.on('selected', highlightSelected)
+  // rendition.on('selected', highlightSelected)
   rendition.on('relocated', onProgress)
 }
 function hideAllTools() {
@@ -305,7 +299,7 @@ function selectCursorWord(e) {
   let offset
 
   const sel = window.getSelection()
-  sel.removeAllRanges()
+  sel && sel.removeAllRanges()
 
   if (document['caretPositionFromPoint']) {
     const pos = document['caretPositionFromPoint'](x, y)
@@ -475,29 +469,33 @@ function clearHighlight(item, evt) {
     })
     .catch((err) => console.error('clearHighlight', err))
 }
-
+function ListenTranslateIframeMessage(type = '', val) {
+  if (type === 'sense-def-en') {
+    console.log(type, val)
+  } else if (type === 'sense-def-cn') {
+    console.log(type, val)
+  }
+}
 function handleTranslate() {
-  let queryTxt
   ebook
     .getRange(clickHightLightCfi)
     .then((range) => {
       return Promise.resolve(range.toString())
     })
     .then((txt) => {
-      queryTxt = txt
-      if (!usingDict) {
-        let dictHash = localStorage.getItem('dict-using-hash')
-        return DB.getBookContent(dictHash)
+      let dictHash = localStorage.getItem('dict-using-hash')
+      if (!dictHash) {
+        alert('尚未安装词典，请前往【设置】下载安装')
       }
-      return Promise.resolve(usingDict)
-    })
-    .then((dictFile) => {
-      usingDict = dictFile
-      return lookup(usingDict.content, queryTxt)
+      return lookup(dictHash, txt)
     })
     .then((translatedDom) => {
+      return generateHtml(translatedDom.html(), 'dict/oxford10.css', 'dict/oxford10.js')
+    })
+    .then((res) => {
+      translateInfo.value = res
       showTranslate.value = true
-      translateInfo.value = translatedDom.html()
+      window.ListenTranslateIframeMessage = ListenTranslateIframeMessage
     })
     .catch((err) => console.error('translated', err))
 }
@@ -816,19 +814,12 @@ onUnmounted(() => {
   max-width: 100%;
   max-height: 100%;
 }
-</style>
-<style>
-#translated ol {
-  min-height: 100vh;
-  list-style-type: decimal;
-}
-#translated ul {
-  list-style-type: disc;
-}
-#translated .def {
-  font-weight: bold;
-}
-#translated deft chn {
-  font-weight: bold;
+#translated {
+  overflow-x: hidden;
+  width: 100vw;
+  height: 85vh;
+  padding: 1rem;
+  margin: 0;
+  border: none;
 }
 </style>
