@@ -266,6 +266,8 @@ async function renderBook() {
     iframeView.document.addEventListener('click', showClickedImg)
     iframeView.document.removeEventListener('click', selectCursorWord)
     iframeView.document.addEventListener('click', selectCursorWord)
+    iframeView.document.removeEventListener('touchmove', hideAllTools)
+    iframeView.document.addEventListener('touchmove', hideAllTools)
   })
 
   const cfi = await DB.getBookCfi(bookHash)
@@ -286,6 +288,10 @@ async function renderBook() {
   rendition.on('markClicked', onHighlightClick)
   rendition.on('selected', highlightSelected)
   rendition.on('relocated', onProgress)
+}
+function hideAllTools() {
+  isShowTool.value = false
+  showMarkTool(false)
 }
 
 function selectCursorWord(e) {
@@ -610,9 +616,11 @@ function highlightSelected(cfiRange, contents) {
 function onKeyUp(e) {
   if ((e.keyCode || e.which) == 37) {
     rendition.prev()
+    hideAllTools()
   }
   if ((e.keyCode || e.which) == 39) {
     rendition.next()
+    hideAllTools()
   }
 }
 function refreshBookNav(toc) {
