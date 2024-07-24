@@ -147,6 +147,7 @@ const showTranslate = ref(false)
 const translateInfo = ref('')
 const bookProgress = ref(0)
 const isShowTool = ref(false)
+const isShowMarktool = ref(false)
 const bookTitle = ref('')
 const chaptertitle = ref('')
 const clickedImageSrc = ref('')
@@ -157,8 +158,8 @@ const curTheme = ref(storedTheme ? storedTheme : 'Default')
 const storedFontSize = localStorage.getItem('book-font-size')
 let defaultFontSize = window.getComputedStyle(document.body).fontSize
 defaultFontSize = defaultFontSize.replace('px', '')
-defaultFontSize = defaultFontSize ? defaultFontSize : 16
-const curFontSize = ref(storedFontSize ? storedFontSize : defaultFontSize)
+defaultFontSize = defaultFontSize ? parseInt(defaultFontSize) : 16
+const curFontSize = ref(storedFontSize ? parseInt(storedFontSize) : defaultFontSize)
 const minFontSize = 8
 const maxFontSize = 36
 const themeList = [
@@ -168,7 +169,7 @@ const themeList = [
     style: {
       body: {
         'padding-bottom': '1rem!important',
-        color: '#000',
+        color: '#222',
         background: '#ccc58f'
       }
     }
@@ -201,8 +202,8 @@ const themeList = [
     style: {
       body: {
         'padding-bottom': '1rem!important',
-        color: '#5c5b56',
-        background: '#c6c2b6'
+        color: '#222',
+        background: 'tan'
       }
     }
   },
@@ -218,77 +219,16 @@ const themeList = [
     }
   }
 ]
-let cfiBeforShowTheme = ''
-function showMarkTool(isShow = false, left = 0, top = 0) {
-  const el = document.querySelector('#mark-tool')
-  const rightBorder = left + el.offsetWidth
-  if (rightBorder > window.innerWidth) {
-    el.style.left = left - el.offsetWidth + 'px'
-    el.classList.remove('posi-left')
-    el.classList.add('posi-right')
-  } else {
-    el.style.left = left + 'px'
-    el.classList.remove('posi-right')
-    el.classList.add('posi-left')
-  }
-  el.style.top = top + 'px'
-  const zindex = isShow ? 1 : -1
-  el.style.zIndex = zindex
-}
-function showThemeEditor() {
-  DB.getBookCfi(bookHash).then((res) => {
-    showTheme.value = true
-    cfiBeforShowTheme = res
-  })
-}
-function setTheme(name) {
-  console.log(`set theme ${name}`)
-  const idx = themeList.findIndex((item) => item.name === name)
-  const theme = themeList[idx].style.body
-  for (let rule in theme) {
-    rendition.themes.override(rule, theme[rule], 1)
-  }
-  redrawAnnotations()
-  localStorage.setItem('book-theme', name)
-}
-function setFontSize(val) {
-  rendition.themes.fontSize(`${val}px`)
-  rendition.display(cfiBeforShowTheme)
-  redrawAnnotations()
-  localStorage.setItem('book-font-size', val)
-}
-function genThemeStyle(theme) {
-  const style = theme.style.body
-  return `color:${style.color};background:${style.background};`
-}
 const markActions = [
   { handler: clearHighlight, text: '', icon: 'delete-o' },
   { handler: handleTranslate, text: '', icon: 'question-o' },
   { handler: handleCopy, text: 'copy', icon: '' }
 ]
-
-function redrawAnnotations() {
-  rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
-}
-
-const touchBookEvents = 'swiperight swipeleft'
-function touchBook(evt) {
-  switch (evt.type) {
-    case 'swiperight':
-      rendition.prev()
-      break
-    case 'swipeleft':
-      rendition.next()
-      break
-  }
-}
-
+let cfiBeforShowTheme = ''
 let bookHash
 let router
+let HookIframeView
 async function renderBook() {
-  const curRoute = router.currentRoute
-  const query = curRoute.value.query
-  let cfi = query.cfi
   const res = await DB.getBookContent(bookHash)
   if (!res || !res.content) {
     console.error('getBookContent', res)
@@ -318,18 +258,17 @@ async function renderBook() {
     rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
   )
   rendition.hooks.render.register((iframeView) => {
+    HookIframeView = iframeView
     preventBookDefaultEvent(iframeView.document)
     iframeView.document.removeEventListener('click', posiMarkPopover)
     iframeView.document.addEventListener('click', posiMarkPopover)
     iframeView.document.removeEventListener('click', showClickedImg)
     iframeView.document.addEventListener('click', showClickedImg)
-    const mc = new Hammer(iframeView.document)
-    mc.on(touchBookEvents, touchBook)
+    iframeView.document.removeEventListener('click', selectCursorWord)
+    iframeView.document.addEventListener('click', selectCursorWord)
   })
 
-  if (!cfi) {
-    cfi = await DB.getBookCfi(bookHash)
-  }
+  const cfi = await DB.getBookCfi(bookHash)
   cfi ? rendition.display(cfi) : rendition.display()
 
   ebook.ready
@@ -348,6 +287,123 @@ async function renderBook() {
   rendition.on('selected', highlightSelected)
   rendition.on('relocated', onProgress)
 }
+
+function selectCursorWord(e) {
+  if (!HookIframeView || isShowMarktool.value || isShowTool.value) return
+  const window = HookIframeView.window
+  const document = HookIframeView.document
+  const x = e.clientX
+  const y = e.clientY
+
+  let offsetNode
+  let offset
+
+  const sel = window.getSelection()
+  sel.removeAllRanges()
+
+  if (document['caretPositionFromPoint']) {
+    const pos = document['caretPositionFromPoint'](x, y)
+    if (!pos) {
+      return
+    }
+    offsetNode = pos.offsetNode
+    offset = pos.offset
+  } else if (document['caretRangeFromPoint']) {
+    const pos = document['caretRangeFromPoint'](x, y)
+    if (!pos) {
+      return
+    }
+    offsetNode = pos.startContainer
+    offset = pos.startOffset
+  } else {
+    return
+  }
+
+  if (offsetNode.nodeType === Node.TEXT_NODE) {
+    const textNode = offsetNode
+    const content = textNode.data
+    const head = (content.slice(0, offset).match(/[-_a-z]+$/i) || [''])[0]
+    const tail = (content.slice(offset).match(/^([-_a-z]+|[\u4e00-\u9fa5])/i) || [''])[0]
+    if (head.length <= 0 && tail.length <= 0) {
+      return
+    }
+    if ((head + tail).trim().length === 0) {
+      return
+    }
+
+    const range = document.createRange()
+    range.setStart(textNode, offset - head.length)
+    range.setEnd(textNode, offset + tail.length)
+    const rangeRect = range.getBoundingClientRect()
+
+    if (
+      rangeRect.left <= x &&
+      rangeRect.right >= x &&
+      rangeRect.top <= y &&
+      rangeRect.bottom >= y
+    ) {
+      sel.addRange(range)
+    }
+
+    range.detach()
+    const cfiRange = HookIframeView.contents.cfiFromRange(range)
+    if (markList.findIndex((item) => item.cfi === cfiRange) >= 0) {
+      console.log(`cursorWord="${range.toString()}" ${cfiRange} already exist`)
+      return
+    }
+    console.log(`cursorWord="${range.toString()}" ${cfiRange} to highlight`)
+    highlightSelected(cfiRange, HookIframeView)
+  }
+}
+
+function showMarkTool(isShow = false, left = 0, top = 0) {
+  const el = document.querySelector('#mark-tool')
+  const rightBorder = left + el.offsetWidth
+  if (rightBorder > window.innerWidth) {
+    el.style.left = left - el.offsetWidth + 'px'
+    el.classList.remove('posi-left')
+    el.classList.add('posi-right')
+  } else {
+    el.style.left = left + 'px'
+    el.classList.remove('posi-right')
+    el.classList.add('posi-left')
+  }
+  el.style.top = top + 'px'
+  const zindex = isShow ? 1 : -1
+  el.style.zIndex = zindex
+  isShowMarktool.value = isShow
+}
+function showThemeEditor() {
+  DB.getBookCfi(bookHash).then((res) => {
+    showTheme.value = true
+    cfiBeforShowTheme = res
+  })
+}
+function setTheme(name) {
+  console.log(`set theme ${name}`)
+  const idx = themeList.findIndex((item) => item.name === name)
+  const theme = themeList[idx].style.body
+  for (let rule in theme) {
+    rendition.themes.override(rule, theme[rule], 1)
+  }
+  redrawAnnotations()
+  localStorage.setItem('book-theme', name)
+}
+function setFontSize(val) {
+  rendition.themes.fontSize(`${val}px`)
+  if (cfiBeforShowTheme) {
+    rendition.display(cfiBeforShowTheme)
+  }
+  redrawAnnotations()
+  localStorage.setItem('book-font-size', val)
+}
+function genThemeStyle(theme) {
+  const style = theme.style.body
+  return `color:${style.color};background:${style.background};`
+}
+function redrawAnnotations() {
+  rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
+}
 function showClickedImg(evt) {
   if (evt.target.tagName === 'image' && evt.target.href) {
     return
@@ -364,6 +420,7 @@ function highlightHistory() {
         data.forEach((item) => {
           rendition.annotations.highlight(item.cfi)
         })
+        markList.splice(0, markList.length + 1, ...data)
       }
     })
     .catch((err) => console.error('highlightHistoryMark listBookmark', err))
@@ -381,25 +438,28 @@ function onHighlightClick(cfiRange) {
   })
 }
 function posiMarkPopover(evt) {
-  const id = new Date().getTime()
-  console.log(`${id} hl`, isClickHightLight)
-  console.log(`${id} hlr`, clickHightLightRange)
-  if (isClickHightLight && clickHightLightRange) {
-    isClickHightLight = false
-    showMarkTool(true, evt.screenX, evt.pageY)
-  } else {
-    showMarkTool(false)
-    isClickHightLight = false
-    clickHightLightRange = undefined
-    clickHightLightCfi = undefined
-  }
-  isShowTool.value = false
+  // delay 100ms to make sure onHighlightClick done
+  const { screenX, pageY } = evt
+  setTimeout(() => {
+    if (isClickHightLight && clickHightLightRange) {
+      isClickHightLight = false
+      showMarkTool(true, screenX, pageY)
+    } else {
+      showMarkTool(false)
+      isClickHightLight = false
+      clickHightLightRange = undefined
+      clickHightLightCfi = undefined
+    }
+    isShowTool.value = false
+  }, 100)
 }
 
 function clearHighlight(item, evt) {
   evt.stopPropagation()
   DB.deleteBookmark(bookHash, clickHightLightCfi)
     .then((data) => {
+      const idx = markList.findIndex((item) => item.cfi === clickHightLightCfi)
+      markList.splice(idx, 1)
       console.log('deleteBookmark', data)
       rendition.annotations.remove(clickHightLightCfi)
       rendition.manager.views.forEach((item) => {
@@ -507,6 +567,7 @@ function getSelectCtx(txt, startOffset, endOffset) {
 function highlightSelected(cfiRange, contents) {
   const selection = contents.window.getSelection()
   const range = selection.getRangeAt(0)
+  selection.removeAllRanges()
   const txt = range ? range.toString().trim() : ''
   if (!txt) {
     return
@@ -518,7 +579,6 @@ function highlightSelected(cfiRange, contents) {
     return
   }
   const ctx = getSelectCtx(range.commonAncestorContainer.data, range.startOffset, range.endOffset)
-  selection.removeAllRanges()
   DB.putBookmark({
     bookHash,
     cfi: cfiRange,
