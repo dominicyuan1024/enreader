@@ -173,7 +173,7 @@ function putBookmark(mark) {
     db.bookmark
       .get({ bookHash, cfi })
       .then((data) => {
-        mark = data instanceof Object ? data : mark
+        mark = data instanceof Object ? { ...data, ...mark } : mark
         mark.ctime = mark.ctime || now()
         mark.utime = now()
         return db.bookmark.put(mark)

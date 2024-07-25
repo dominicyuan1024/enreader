@@ -32,6 +32,8 @@ export async function generateHtml(content = '', css = '', js = '', style = '') 
       ${jsEl}
       ${styleEl}
     </header> 
-    <body style="margin:0;padding:0;border:0;">${content}</body>
+    <body style="margin:0;padding:0;border:0;background:#fff;">
+    ${content}
+    </body>
   </html>`
 }

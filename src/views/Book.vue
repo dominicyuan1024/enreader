@@ -37,6 +37,17 @@
       <van-popup v-model:show="showTranslate" position="top">
         <iframe :srcdoc="translateInfo" id="translated"></iframe>
       </van-popup>
+      <van-popup v-model:show="showRecord" position="bottom">
+        <div style="padding: 1rem">
+          <h4 style="font-weight: bold">
+            {{ clickHighlightInfo.content }}
+          </h4>
+          <p>{{ clickHighlightInfo.defEN }}</p>
+          <p class="mosaic" @click="(evt) => evt.target.classList.toggle('mosaic')">
+            {{ clickHighlightInfo.defCN }}
+          </p>
+        </div>
+      </van-popup>
       <van-popup v-model:show="showTheme" position="bottom">
         <div style="padding: 1rem">
           <div style="padding: 1rem; display: flex; align-items: center">
@@ -103,7 +114,7 @@
         <div class="triangle"></div>
       </div>
       <div id="mark-tool" style="z-index: -1">
-        <div v-for="item in markActions" class="button-wrap" :key="item.text">
+        <div v-for="item in markActions" class="button-wrap" :key="item.name">
           <van-button
             square
             size="small"
@@ -138,6 +149,8 @@ const curPage = ref('')
 const showMark = ref(false)
 const markList = reactive([])
 const showTranslate = ref(false)
+const showRecord = ref(false)
+const clickHighlightInfo = ref({})
 const translateInfo = ref('')
 const bookProgress = ref(0)
 const isShowTool = ref(false)
@@ -214,9 +227,10 @@ const themeList = [
   }
 ]
 const markActions = [
-  { handler: clearHighlight, text: '', icon: 'delete-o' },
-  { handler: handleTranslate, text: '', icon: 'question-o' },
-  { handler: handleCopy, text: 'copy', icon: '' }
+  { name: 'delete', handler: clearHighlight, text: '', icon: 'delete-o' },
+  { name: 'question', handler: handleTranslate, text: '', icon: 'question-o' },
+  { name: 'record', handler: handleRecordNote, text: '', icon: 'records-o' },
+  { name: 'copy', handler: handleCopy, text: 'copy', icon: '' }
 ]
 let cfiBeforShowTheme = ''
 let bookHash
@@ -301,15 +315,15 @@ function selectCursorWord(e) {
   const sel = window.getSelection()
   sel && sel.removeAllRanges()
 
-  if (document['caretPositionFromPoint']) {
-    const pos = document['caretPositionFromPoint'](x, y)
+  if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(x, y)
     if (!pos) {
       return
     }
     offsetNode = pos.offsetNode
     offset = pos.offset
-  } else if (document['caretRangeFromPoint']) {
-    const pos = document['caretRangeFromPoint'](x, y)
+  } else if (document.caretRangeFromPoint) {
+    const pos = document.caretRangeFromPoint(x, y)
     if (!pos) {
       return
     }
@@ -470,12 +484,27 @@ function clearHighlight(item, evt) {
     .catch((err) => console.error('clearHighlight', err))
 }
 function ListenTranslateIframeMessage(type = '', val) {
-  if (type === 'sense-def-en') {
-    console.log(type, val)
-  } else if (type === 'sense-def-cn') {
-    console.log(type, val)
+  if (type === 'sense-def') {
+    const idx = markList.findIndex((item) => item.cfi === clickHightLightCfi)
+    if (idx < 0) {
+      return
+    }
+    const mark = markList[idx]
+    mark.defCN = val.defCN
+    mark.defEN = val.defEN
+    DB.putBookmark(mark)
+      .then((res) => {
+        console.log(type, val, `res=${res}`)
+      })
+      .catch((err) => console.error(type, err))
   }
 }
+function handleRecordNote() {
+  showRecord.value = true
+  const idx = markList.findIndex((item) => item.cfi === clickHightLightCfi)
+  return idx >= 0 ? (clickHighlightInfo.value = markList[idx]) : (clickHighlightInfo.value = {})
+}
+
 function handleTranslate() {
   ebook
     .getRange(clickHightLightCfi)
@@ -587,7 +616,6 @@ function highlightSelected(cfiRange, contents) {
     bookHash,
     cfi: cfiRange,
     content: txt,
-    description: '',
     ctx: ctx
   })
     .then((data) => {

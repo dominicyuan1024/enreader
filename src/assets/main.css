@@ -47,3 +47,8 @@
   bottom: 0;
   background-color: rgba(255, 255, 255, 0.8);
 }
+
+.mosaic {
+  color: transparent !important;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+}

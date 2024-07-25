@@ -24,6 +24,12 @@
     >
       <van-cell v-for="(item, idx) in noteList" :key="item.id" :title="item.content">
         <p v-html="item.ctxHtml"></p>
+        <template #label>
+          {{ item.defEN }}
+          <span class="mosaic" @click="(evt) => evt.target.classList.toggle('mosaic')">{{
+            item.defCN
+          }}</span>
+        </template>
         <div v-if="isEditing" class="absolute-cover align-center">
           <van-icon
             name="delete"

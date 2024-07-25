@@ -1,24 +1,71 @@
+const sendMessage = window.top.ListenTranslateIframeMessage
+let _selectedDefEn = ''
+let _selectedDefCn = ''
+function clickToolHandle() {
+  if (typeof sendMessage !== 'function') {
+    return
+  }
+  hideTool()
+  sendMessage('sense-def', {
+    defEN: _selectedDefEn,
+    defCN: _selectedDefCn
+  })
+}
+function showTool(x = 0, y = 0) {
+  let toolEl = document.querySelector('#selftool')
+  if (!toolEl) {
+    toolEl = document.createElement('div')
+    toolEl.id = 'selftool'
+    document.body.appendChild(toolEl)
+  }
+  toolEl.classList.add('show')
+  toolEl.style.left = x - toolEl.offsetWidth / 2 + 'px'
+  toolEl.style.top = y - toolEl.offsetHeight - 3 + 'px'
+  toolEl.removeEventListener('click', clickToolHandle)
+  toolEl.addEventListener('click', clickToolHandle)
+}
+function hideTool() {
+  const toolEl = document.querySelector('#selftool')
+  toolEl && toolEl.classList.remove('show')
+}
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.sense>.examples').forEach((el) => {
-    el.addEventListener('click', (evt) => {
-      evt.currentTarget.classList.toggle('selfshow')
+  const sl = ['.sense>.examples', '.collapse', 'chn', '.idioms']
+  sl.forEach((item) => {
+    document.querySelectorAll(item).forEach((el) => {
+      el.addEventListener('click', (evt) => {
+        evt.stopPropagation()
+        evt.currentTarget.classList.toggle('selfshow')
+        hideTool()
+      })
     })
   })
-  document.querySelectorAll('.collapse').forEach((el) => {
-    el.addEventListener('click', (evt) => {
-      evt.currentTarget.classList.toggle('selfshow')
-    })
+
+  document.body.addEventListener('click', (evt) => {
+    if (evt.target.id === 'selftool') {
+      return
+    }
+    hideTool()
   })
-  document.querySelectorAll('.sense>.def').forEach((el) => {
+
+  document.querySelectorAll('.sense .def').forEach((el) => {
     el.addEventListener('click', (evt) => {
-      const sendMessage = window.top.ListenTranslateIframeMessage
-      typeof sendMessage === 'function' && sendMessage('sense-def-en', evt.currentTarget.innerText)
-    })
-  })
-  document.querySelectorAll('.sense>deft').forEach((el) => {
-    el.addEventListener('click', (evt) => {
-      const sendMessage = window.top.ListenTranslateIframeMessage
-      typeof sendMessage === 'function' && sendMessage('sense-def-cn', evt.currentTarget.innerText)
+      evt.stopPropagation()
+      if (typeof sendMessage !== 'function') {
+        return
+      }
+      let enEl = evt.currentTarget.cloneNode(true)
+      enEl.querySelectorAll('chn').forEach((el) => {
+        el.innerHtml = ''
+        el.innerText = ''
+      })
+      _selectedDefEn = enEl.innerText
+      let cnEl = evt.currentTarget.parentNode.querySelector('.def+deft')
+      if (!cnEl) {
+        cnEl = evt.currentTarget.querySelector('chn')
+      }
+      _selectedDefCn = cnEl ? cnEl.innerText : ''
+      const { pageX, pageY } = evt
+      showTool(pageX, pageY)
     })
   })
 })
