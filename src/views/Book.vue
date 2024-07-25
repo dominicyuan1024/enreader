@@ -79,6 +79,21 @@
               </van-cell>
             </van-cell-group>
           </van-radio-group>
+          <div style="padding: 1rem; display: flex; align-items: center">
+            选词方式：
+            <van-button
+              :color="isHighlightWhenClick ? 'hsla(160, 100%, 37%, 1)' : ''"
+              square
+              @click="switchHighlightOnClick(true)"
+              >单击</van-button
+            >
+            <van-button
+              :color="isHighlightWhenClick ? '' : 'hsla(160, 100%, 37%, 1)'"
+              square
+              @click="switchHighlightOnClick(false)"
+              >系统</van-button
+            >
+          </div>
         </div>
       </van-popup>
       <van-popup v-model:show="showImage" position="top">
@@ -169,6 +184,8 @@ defaultFontSize = defaultFontSize ? parseInt(defaultFontSize) : 16
 const curFontSize = ref(storedFontSize ? parseInt(storedFontSize) : defaultFontSize)
 const minFontSize = 8
 const maxFontSize = 36
+const storedHighlightWhenClick = localStorage.getItem('isHighlightWhenClick')
+const isHighlightWhenClick = ref(storedHighlightWhenClick !== 'false')
 const themeList = [
   {
     alias: '默认',
@@ -294,15 +311,25 @@ async function renderBook() {
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
   rendition.on('markClicked', onHighlightClick)
-  // rendition.on('selected', highlightSelected)
+  rendition.on('selected', (cfiRange, contents) => {
+    if (!isHighlightWhenClick.value) {
+      highlightSelected(cfiRange, contents)
+    }
+  })
   rendition.on('relocated', onProgress)
 }
 function hideAllTools() {
   isShowTool.value = false
   showMarkTool(false)
 }
-
+function switchHighlightOnClick(val) {
+  isHighlightWhenClick.value = val
+  localStorage.setItem('isHighlightWhenClick', val)
+}
 function selectCursorWord(e) {
+  if (!isHighlightWhenClick.value) {
+    return
+  }
   if (!HookIframeView || isShowMarktool.value || isShowTool.value) return
   const window = HookIframeView.window
   const document = HookIframeView.document
