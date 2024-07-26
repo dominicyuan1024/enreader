@@ -28,45 +28,49 @@ function hideTool() {
   const toolEl = document.querySelector('#selftool')
   toolEl && toolEl.classList.remove('show')
 }
-document.addEventListener('DOMContentLoaded', () => {
-  const sl = ['.sense>.examples', '.collapse', 'chn', '.idioms']
-  sl.forEach((item) => {
-    document.querySelectorAll(item).forEach((el) => {
-      el.addEventListener('click', (evt) => {
-        evt.stopPropagation()
-        evt.currentTarget.classList.toggle('selfshow')
-        hideTool()
-      })
-    })
-  })
-
-  document.body.addEventListener('click', (evt) => {
-    if (evt.target.id === 'selftool') {
-      return
-    }
-    hideTool()
-  })
-
-  document.querySelectorAll('.sense .def').forEach((el) => {
+// document.addEventListener('DOMContentLoaded', () => {}
+const sl = ['.sense>.examples', '.collapse', 'chn', '.idioms']
+sl.forEach((item) => {
+  document.querySelectorAll(item).forEach((el) => {
     el.addEventListener('click', (evt) => {
       evt.stopPropagation()
-      if (typeof sendMessage !== 'function') {
-        return
-      }
-      let enEl = evt.currentTarget.cloneNode(true)
-      enEl.querySelectorAll('chn').forEach((el) => {
-        el.innerHtml = ''
-        el.innerText = ''
-      })
-      _selectedDefEn = enEl.innerText
-      let cnEl = evt.currentTarget.parentNode.querySelector('.def+deft')
-      if (!cnEl) {
-        cnEl = evt.currentTarget.querySelector('chn')
-      }
-      _selectedDefCn = cnEl ? cnEl.innerText : ''
-      const { pageX, pageY } = evt
-      showTool(pageX, pageY)
+      evt.currentTarget.classList.toggle('selfshow')
+      hideTool()
     })
+  })
+})
+
+document.body.addEventListener('click', (evt) => {
+  if (evt.target.id === 'selftool') {
+    return
+  }
+  hideTool()
+})
+
+document.querySelectorAll('.sense .def').forEach((el) => {
+  el.style.textDecoration = 'underline'
+  const relTextDec = window.getComputedStyle(el, null).getPropertyValue('text-decoration')
+  if (relTextDec.indexOf('underline') < 0) {
+    return
+  }
+  el.addEventListener('click', (evt) => {
+    evt.stopPropagation()
+    if (typeof sendMessage !== 'function') {
+      return
+    }
+    let enEl = evt.currentTarget.cloneNode(true)
+    enEl.querySelectorAll('chn').forEach((el) => {
+      el.innerHtml = ''
+      el.innerText = ''
+    })
+    _selectedDefEn = enEl.innerText
+    let cnEl = evt.currentTarget.parentNode.querySelector('.def+deft')
+    if (!cnEl) {
+      cnEl = evt.currentTarget.querySelector('chn')
+    }
+    _selectedDefCn = cnEl ? cnEl.innerText : ''
+    const { pageX, pageY } = evt
+    showTool(pageX, pageY)
   })
 })
 

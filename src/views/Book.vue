@@ -38,7 +38,7 @@
         <iframe :srcdoc="translateInfo" id="translated"></iframe>
       </van-popup>
       <van-popup v-model:show="showRecord" position="bottom">
-        <div style="padding: 1rem">
+        <div v-if="showRecord" style="padding: 1rem">
           <h4 style="font-weight: bold">
             {{ clickHighlightInfo.content }}
           </h4>

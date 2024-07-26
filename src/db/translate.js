@@ -27,13 +27,13 @@ export async function generateHtml(content = '', css = '', js = '', style = '') 
   content = content ? content : '404 notfound'
   return `
   <html> 
-    <header> 
+    <head> 
       ${cssEl}
-      ${jsEl}
       ${styleEl}
-    </header> 
+    </head> 
     <body style="margin:0;padding:0;border:0;background:#fff;">
     ${content}
+    ${jsEl}
     </body>
   </html>`
 }

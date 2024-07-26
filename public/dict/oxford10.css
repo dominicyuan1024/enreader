@@ -2457,11 +2457,11 @@ chn.selfshow * {
   color: initial !important;
   text-shadow: none !important;
 }
-.sense .def {
+/* .sense .def {
   text-decoration: underline;
-}
+}*/
 .idioms .def {
-  text-decoration: initial;
+  text-decoration: initial !important;
 }
 #selftool {
   position: absolute;
