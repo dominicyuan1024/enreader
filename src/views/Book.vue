@@ -1,7 +1,7 @@
 <template>
   <main class="book-wrap">
     <div class="book">
-      <p ref="reading" id="reading"></p>
+      <div ref="reading" id="reading"></div>
       <div class="book-footer">
         <p>{{ bookTitle }}</p>
         <p>{{ chaptertitle }}</p>
@@ -289,8 +289,8 @@ async function renderBook() {
     iframeView.document.addEventListener('click', posiMarkPopover)
     iframeView.document.removeEventListener('click', showClickedImg)
     iframeView.document.addEventListener('click', showClickedImg)
-    iframeView.document.removeEventListener('click', selectCursorWord)
-    iframeView.document.addEventListener('click', selectCursorWord)
+    // iframeView.document.removeEventListener('click', selectCursorWord(HookIframeView))
+    iframeView.document.addEventListener('click', selectCursorWord(HookIframeView))
     iframeView.document.removeEventListener('touchmove', hideAllTools)
     iframeView.document.addEventListener('touchmove', hideAllTools)
   })
@@ -312,9 +312,7 @@ async function renderBook() {
   rendition.on('keyup', onKeyUp)
   rendition.on('markClicked', onHighlightClick)
   rendition.on('selected', (cfiRange, contents) => {
-    if (!isHighlightWhenClick.value) {
-      highlightSelected(cfiRange, contents)
-    }
+    highlightSelected(cfiRange, contents)
   })
   rendition.on('relocated', onProgress)
 }
@@ -326,74 +324,68 @@ function switchHighlightOnClick(val) {
   isHighlightWhenClick.value = val
   localStorage.setItem('isHighlightWhenClick', val)
 }
-function selectCursorWord(e) {
-  if (!isHighlightWhenClick.value) {
-    return
-  }
-  if (!HookIframeView || isShowMarktool.value || isShowTool.value) return
-  const window = HookIframeView.window
-  const document = HookIframeView.document
-  const x = e.clientX
-  const y = e.clientY
-
-  let offsetNode
-  let offset
-
-  const sel = window.getSelection()
-  sel && sel.removeAllRanges()
-
-  if (document.caretPositionFromPoint) {
-    const pos = document.caretPositionFromPoint(x, y)
-    if (!pos) {
+function selectCursorWord(HookIframeView) {
+  return (e) => {
+    if (!isHighlightWhenClick.value) {
       return
     }
-    offsetNode = pos.offsetNode
-    offset = pos.offset
-  } else if (document.caretRangeFromPoint) {
-    const pos = document.caretRangeFromPoint(x, y)
-    if (!pos) {
-      return
-    }
-    offsetNode = pos.startContainer
-    offset = pos.startOffset
-  } else {
-    return
-  }
+    if (!HookIframeView || isShowTool.value || isShowMarktool.value) return
+    const window = HookIframeView.window
+    const document = HookIframeView.document
+    const x = e.clientX
+    const y = e.clientY
 
-  if (offsetNode.nodeType === Node.TEXT_NODE) {
-    const textNode = offsetNode
-    const content = textNode.data
-    const head = (content.slice(0, offset).match(/[-_a-z]+$/i) || [''])[0]
-    const tail = (content.slice(offset).match(/^([-_a-z]+|[\u4e00-\u9fa5])/i) || [''])[0]
-    if (head.length <= 0 && tail.length <= 0) {
-      return
-    }
-    if ((head + tail).trim().length === 0) {
+    let offsetNode
+    let offset
+
+    const sel = window.getSelection()
+    sel && sel.removeAllRanges()
+
+    if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(x, y)
+      if (!pos) {
+        return
+      }
+      offsetNode = pos.offsetNode
+      offset = pos.offset
+    } else if (document.caretRangeFromPoint) {
+      const pos = document.caretRangeFromPoint(x, y)
+      if (!pos) {
+        return
+      }
+      offsetNode = pos.startContainer
+      offset = pos.startOffset
+    } else {
       return
     }
 
-    const range = document.createRange()
-    range.setStart(textNode, offset - head.length)
-    range.setEnd(textNode, offset + tail.length)
-    const rangeRect = range.getBoundingClientRect()
+    if (offsetNode.nodeType === Node.TEXT_NODE) {
+      const textNode = offsetNode
+      const content = textNode.data
+      const head = (content.slice(0, offset).match(/[-_a-zA-Z]+$/i) || [''])[0]
+      const tail = (content.slice(offset).match(/^([-_a-zA-Z]+|[\u4e00-\u9fa5])/i) || [''])[0]
+      if (head.length <= 0 && tail.length <= 0) {
+        return
+      }
+      if ((head + tail).trim().length === 0) {
+        return
+      }
 
-    if (
-      rangeRect.left <= x &&
-      rangeRect.right >= x &&
-      rangeRect.top <= y &&
-      rangeRect.bottom >= y
-    ) {
+      const range = document.createRange()
+      range.setStart(textNode, offset - head.length)
+      range.setEnd(textNode, offset + tail.length)
+      const rangeRect = range.getBoundingClientRect()
+      const { left, right, top, bottom } = rangeRect
+      const isIn = left <= x && right >= x && top <= y && bottom >= y
+      if (!isIn) return
+      const cfiRange = HookIframeView.contents.cfiFromRange(range)
+      if (markList.findIndex((item) => item.cfi === cfiRange) >= 0) {
+        console.log(`cursorWord="${range.toString()}" ${cfiRange} already exist`)
+        return
+      }
       sel.addRange(range)
+      range.detach()
     }
-
-    range.detach()
-    const cfiRange = HookIframeView.contents.cfiFromRange(range)
-    if (markList.findIndex((item) => item.cfi === cfiRange) >= 0) {
-      console.log(`cursorWord="${range.toString()}" ${cfiRange} already exist`)
-      return
-    }
-    console.log(`cursorWord="${range.toString()}" ${cfiRange} to highlight`)
-    highlightSelected(cfiRange, HookIframeView)
   }
 }
 
@@ -466,45 +458,45 @@ function highlightHistory() {
     })
     .catch((err) => console.error('highlightHistoryMark listBookmark', err))
 }
-let isClickHightLight = false
-let clickHightLightCfi
-let clickHightLightRange
+let isClickHighLight = false
+let clickHighLightCfi
+let clickHighLightRange
 function onHighlightClick(cfiRange) {
   ebook.getRange(cfiRange).then((range) => {
-    clickHightLightCfi = cfiRange
-    clickHightLightRange = range
+    clickHighLightCfi = cfiRange
+    clickHighLightRange = range
     if (range) {
-      isClickHightLight = true
+      isClickHighLight = true
     }
   })
 }
 function posiMarkPopover(evt) {
   // delay 100ms to make sure onHighlightClick done
-  const { screenX, pageY } = evt
+  const { offsetX, pageY } = evt
   setTimeout(() => {
-    if (isClickHightLight && clickHightLightRange) {
-      isClickHightLight = false
-      showMarkTool(true, screenX, pageY)
+    if (isClickHighLight && clickHighLightRange) {
+      isClickHighLight = false
+      showMarkTool(true, offsetX, pageY)
     } else {
       showMarkTool(false)
-      isClickHightLight = false
-      clickHightLightRange = undefined
-      clickHightLightCfi = undefined
+      isClickHighLight = false
+      clickHighLightRange = undefined
+      clickHighLightCfi = undefined
     }
     isShowTool.value = false
-  }, 100)
+  }, 200)
 }
 
 function clearHighlight(item, evt) {
   evt.stopPropagation()
-  DB.deleteBookmark(bookHash, clickHightLightCfi)
+  DB.deleteBookmark(bookHash, clickHighLightCfi)
     .then((data) => {
-      const idx = markList.findIndex((item) => item.cfi === clickHightLightCfi)
+      const idx = markList.findIndex((item) => item.cfi === clickHighLightCfi)
       markList.splice(idx, 1)
       console.log('deleteBookmark', data)
-      rendition.annotations.remove(clickHightLightCfi)
+      rendition.annotations.remove(clickHighLightCfi)
       rendition.manager.views.forEach((item) => {
-        item.unhighlight(clickHightLightCfi)
+        item.unhighlight(clickHighLightCfi)
       })
       showMarkTool(false)
     })
@@ -512,7 +504,7 @@ function clearHighlight(item, evt) {
 }
 function ListenTranslateIframeMessage(type = '', val) {
   if (type === 'sense-def') {
-    const idx = markList.findIndex((item) => item.cfi === clickHightLightCfi)
+    const idx = markList.findIndex((item) => item.cfi === clickHighLightCfi)
     if (idx < 0) {
       return
     }
@@ -528,13 +520,13 @@ function ListenTranslateIframeMessage(type = '', val) {
 }
 function handleRecordNote() {
   showRecord.value = true
-  const idx = markList.findIndex((item) => item.cfi === clickHightLightCfi)
+  const idx = markList.findIndex((item) => item.cfi === clickHighLightCfi)
   return idx >= 0 ? (clickHighlightInfo.value = markList[idx]) : (clickHighlightInfo.value = {})
 }
 
 function handleTranslate() {
   ebook
-    .getRange(clickHightLightCfi)
+    .getRange(clickHighLightCfi)
     .then((range) => {
       return Promise.resolve(range.toString())
     })
@@ -557,7 +549,7 @@ function handleTranslate() {
 }
 
 function handleCopy() {
-  copyToClipboard(clickHightLightRange.toString())
+  copyToClipboard(clickHighLightRange.toString())
     .then(() => {
       showMarkTool(false)
     })
@@ -626,6 +618,9 @@ function getSelectCtx(txt, startOffset, endOffset) {
 }
 function highlightSelected(cfiRange, contents) {
   const selection = contents.window.getSelection()
+  if (selection.toString().trim() === '') {
+    return
+  }
   const range = selection.getRangeAt(0)
   selection.removeAllRanges()
   const txt = range ? range.toString().trim() : ''
@@ -652,10 +647,10 @@ function highlightSelected(cfiRange, contents) {
     })
     .then(() => {
       const position = range.getBoundingClientRect()
-      clickHightLightCfi = cfiRange
-      clickHightLightRange = range
+      clickHighLightCfi = cfiRange
+      clickHighLightRange = range
       if (range) {
-        isClickHightLight = true
+        isClickHighLight = true
       }
       let left = position.left + position.width / 2
       const pageWith = window.document.body.clientWidth
