@@ -538,7 +538,7 @@ function handleTranslate() {
       return lookup(dictHash, txt)
     })
     .then((translatedDom) => {
-      return generateHtml(translatedDom.html(), 'dict/oxford10.css', 'dict/oxford10.js')
+      return generateHtml(translatedDom.html())
     })
     .then((res) => {
       translateInfo.value = res
