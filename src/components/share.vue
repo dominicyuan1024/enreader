@@ -14,6 +14,7 @@ import 'echarts-wordcloud'
 echarts.use([CanvasRenderer, TitleComponent])
 import DB from '../db/db.js'
 import { onMounted, onUnmounted, ref } from 'vue'
+const shareUrl = 'https://dominicyuan1024.github.io/enreader'
 const todayWords = ref([])
 let wordCloudChart
 const imgTitle = '今日新词'
@@ -45,16 +46,19 @@ const dlImgUrl = ref('')
 function downloadImg() {
   const dataUrl = wordCloudChart.getDataURL()
   dlImgUrl.value = dataUrl
-  const fileName = `${imgTitle}-${dayString('_')}`
+  const fileName = `${imgTitle}-${formatDate('_')}`
   saveAs(dataUrl, fileName)
 }
-function dayString(seq) {
+function formatDate(seq) {
   if (!seq) {
     seq = '.'
   }
-  const now = new Date()
-  const res = [now.getFullYear(), now.getMonth(), now.getDay()].join(seq)
-  return res
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}${seq}${month}${seq}${day}`
 }
 function renderTodayWords(data) {
   try {
@@ -70,7 +74,7 @@ function renderTodayWords(data) {
       backgroundColor: '#333',
       title: [
         {
-          text: `${imgTitle} {big|${data.length}} ${dayString()}`,
+          text: `${imgTitle} {big|${data.length}} ${formatDate()}\n${shareUrl}`,
           textStyle: {
             // fontWeight: 'normal',
             fontSize: 10,
@@ -99,10 +103,8 @@ function renderTodayWords(data) {
           // maskImage: maskImage,
           left: 'center',
           top: 'center',
-          width: '100%',
-          height: '100%',
-          right: null,
-          bottom: null,
+          width: '90%',
+          // height: '100%',
           sizeRange: [22, 42],
           rotationRange: [-70, 90],
           rotationStep: 45,

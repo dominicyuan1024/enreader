@@ -1,5 +1,5 @@
 <template>
-  <RouterView style="min-height: 100vh;overflow-y: scroll;" />
+  <RouterView style="min-height: 100vh; overflow-y: scroll" />
   <header class="app-header">
     <van-sticky>
       <van-tabbar
@@ -16,7 +16,7 @@
           :to="item.to"
         ></van-tabbar-item>
         <van-tabbar-item icon="good-job-o" @click="genShare">打卡</van-tabbar-item>
-        <van-tabbar-item icon="star-o" @click="installPWA">PWA</van-tabbar-item>
+        <!-- <van-tabbar-item icon="star-o" @click="installPWA">PWA</van-tabbar-item> -->
         <van-tabbar-item
           icon="ellipsis"
           @click="handleShowMore"
@@ -30,15 +30,19 @@
     <share v-if="showShare"></share>
   </van-popup>
   <van-popup v-model:show="showMore" position="bottom">
-    <div style="text-align: center; padding: 4rem 0">
+    <div class="more-content">
       <h1>暂无更多</h1>
       <h1>尽请期待</h1>
+      <p class="copyright">Copyright © 2025 DominicYuan1024</p>
     </div>
   </van-popup>
 </template>
 
 <script setup>
-import share from './components/share.vue'
+import { defineAsyncComponent } from 'vue'
+const share = defineAsyncComponent(() =>
+  import('./components/share.vue') // 注意路径要正确
+)
 import { RouterView, useRouter } from 'vue-router'
 import { ref, watch, reactive } from 'vue'
 import { ebus, ename } from './stores/events.js'
@@ -111,5 +115,14 @@ function preventNavChange(name) {
     place-items: center;
     padding-right: calc(var(--section-gap) / 2);
   } */
+}
+.more-content{
+  text-align: center;
+  padding-top: 2rem;
+}
+.more-content .copyright{
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  opacity: 0.5;
 }
 </style>

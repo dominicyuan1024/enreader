@@ -2,7 +2,7 @@
   <div class="settings fix-footer fix-header">
     <h3 class="page-header">我的</h3>
     <van-collapse v-model="activeNames">
-      <van-collapse-item name="1" title="词典" icon="shop-o">
+      <van-collapse-item name="dict" title="词典" icon="shop-o">
         <div class="setting-item">
           <van-radio-group v-model="dictChecked" @change="usingDict">
             <div class="dict-item" v-for="item in dictList" :key="item.hash">
@@ -23,13 +23,12 @@
           </van-uploader>
         </div>
       </van-collapse-item>
-      <van-collapse-item title="安全" name="3" icon="shop-o">
+      <van-collapse-item title="安全" name="safty" icon="shop-o">
         <div class="setting-item">
-          <div>开发者模式 <van-switch v-model="devMode" @change="switchDevMode" /></div>
+          <div class="devmode"><span class="label">开发者模式</span> <van-switch v-model="devMode" @change="switchDevMode" /></div>
         </div>
       </van-collapse-item>
     </van-collapse>
-    <p class="copyright fix-footer">Copyright © 2025 DominicYuan1024</p>
   </div>
 </template>
 
@@ -39,11 +38,11 @@ import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
 import axios from 'axios'
 import VConsole from 'vconsole'
-const activeNames = ref(['1'])
-const devMode = ref(window.vconsole ? true : false)
+const activeNames = ref(['dict','safty'])
+const devMode = ref(localStorage.getItem('devMode') === 'true' ? true : false)
 function switchDevMode(val) {
   localStorage.setItem('devMode', val)
-  if (val) {
+  if (val && !window.vconsole) {
     window.vconsole = new VConsole({ theme: 'dark' })
   } else if (window.vconsole) {
     window.vconsole.destroy()
@@ -124,6 +123,9 @@ function downloadDict(dict) {
     })
 }
 onMounted(async () => {
+  if (devMode.value && !window.vconsole) {
+    window.vconsole = new VConsole({ theme: 'dark' })
+  }
   DB.listDictMeta()
     .then((res) => {
       dictList.splice(0, dictList.length, ...res)
@@ -155,20 +157,20 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.settings{
+.settings {
   position: relative;
-}
-.copyright {
-  position: absolute;
-  font-size: 0.5rem;
-  opacity: 0.5;
-  bottom: 0;
-  width: 100%;
-  text-align: left;
-  padding-left: 1rem;
 }
 .setting-item {
   margin-left: 2rem;
+}
+.devmode{
+  display: flex;
+  align-items: center;
+}
+.label{
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
 }
 .dict-item {
   margin-bottom: 1rem;
