@@ -297,7 +297,11 @@ async function renderBook() {
     iframeView.document.addEventListener('click', showClickedImg)
 
     bookClickHandler && iframeView.document.removeEventListener('click', bookClickHandler)
-    bookClickHandler = selectCursorWord(HookIframeView)
+    bookClickHandler = (evt) => {
+      hideAllTools()
+      isHighlightWhenClick.value && selectCursorWord(evt, HookIframeView)
+      // this will emit the event 'selected' of rendition，see how function highlightSelected works
+    }
     iframeView.document.addEventListener('click', bookClickHandler)
 
     iframeView.document.removeEventListener('touchmove', hideAllTools)
@@ -320,9 +324,7 @@ async function renderBook() {
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
   rendition.on('markClicked', onMarkClick)
-  rendition.on('selected', (cfiRange, contents) => {
-    highlightSelected(cfiRange, contents)
-  })
+  rendition.on('selected', highlightSelected)
   rendition.on('relocated', onProgress)
 }
 function hideAllTools() {
@@ -333,73 +335,110 @@ function switchHighlightOnClick(val) {
   isHighlightWhenClick.value = val
   localStorage.setItem('isHighlightWhenClick', val)
 }
-function selectCursorWord(HookIframeView) {
-  return (evt) => {
-    showMarkTool(false)
-    if (!isHighlightWhenClick.value) {
+function selectCursorWord(evt, HookIframeView) {
+  const window = HookIframeView.window
+  const document = HookIframeView.document
+  const x = evt.clientX
+  const y = evt.clientY
+
+  let offsetNode
+  let offset
+
+  const sel = window.getSelection()
+  sel && sel.removeAllRanges()
+
+  if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(x, y)
+    if (!pos) {
       return
     }
-    if (!HookIframeView || isShowTool.value || isShowMarktool.value) return
-    const window = HookIframeView.window
-    const document = HookIframeView.document
-    const x = evt.clientX
-    const y = evt.clientY
-
-    let offsetNode
-    let offset
-
-    const sel = window.getSelection()
-    sel && sel.removeAllRanges()
-
-    if (document.caretPositionFromPoint) {
-      const pos = document.caretPositionFromPoint(x, y)
-      if (!pos) {
-        return
-      }
-      offsetNode = pos.offsetNode
-      offset = pos.offset
-    } else if (document.caretRangeFromPoint) {
-      const pos = document.caretRangeFromPoint(x, y)
-      if (!pos) {
-        return
-      }
-      offsetNode = pos.startContainer
-      offset = pos.startOffset
-    } else {
+    offsetNode = pos.offsetNode
+    offset = pos.offset
+  } else if (document.caretRangeFromPoint) {
+    const pos = document.caretRangeFromPoint(x, y)
+    if (!pos) {
       return
     }
-
-    if (offsetNode.nodeType === Node.TEXT_NODE) {
-      const textNode = offsetNode
-      const content = textNode.data
-      const head = (content.slice(0, offset).match(/[-_a-zA-Z]+$/i) || [''])[0]
-      const tail = (content.slice(offset).match(/^([-_a-zA-Z]+|[\u4e00-\u9fa5])/i) || [''])[0]
-      if (head.length <= 0 && tail.length <= 0) {
-        return
-      }
-      if ((head + tail).trim().length === 0) {
-        return
-      }
-
-      const range = document.createRange()
-      range.setStart(textNode, offset - head.length)
-      range.setEnd(textNode, offset + tail.length)
-      const rangeRect = range.getBoundingClientRect()
-      const { left, right, top, bottom } = rangeRect
-      const isIn = left <= x && right >= x && top <= y && bottom >= y
-      if (!isIn) return
-
-      showMarkTool(true, evt.offsetX, evt.pageY)
-
-      const cfiRange = HookIframeView.contents.cfiFromRange(range)
-      if (markList.findIndex((item) => item.cfi === cfiRange) >= 0) {
-        console.log(`cursorWord="${range.toString()}" ${cfiRange} already exist`)
-        return
-      }
-      sel.addRange(range)
-      range.detach()
-    }
+    offsetNode = pos.startContainer
+    offset = pos.startOffset
+  } else {
+    return
   }
+
+  if (offsetNode.nodeType !== Node.TEXT_NODE) {
+    return
+  }
+
+  const textNode = offsetNode
+  const content = textNode.data
+  const head = (content.slice(0, offset).match(/[-_a-zA-Z]+$/i) || [''])[0]
+  const tail = (content.slice(offset).match(/^([-_a-zA-Z]+|[\u4e00-\u9fa5])/i) || [''])[0]
+  if (head.length <= 0 && tail.length <= 0) {
+    return
+  }
+  if ((head + tail).trim().length === 0) {
+    return
+  }
+
+  const range = document.createRange()
+  range.setStart(textNode, offset - head.length)
+  range.setEnd(textNode, offset + tail.length)
+  const rangeRect = range.getBoundingClientRect()
+  const { left, right, top, bottom } = rangeRect
+  const isIn = left <= x && right >= x && top <= y && bottom >= y
+  if (!isIn) {
+    return
+  }
+
+  sel.addRange(range)
+  return range
+}
+
+function highlightSelected(cfiRange, contents) {
+  const selection = contents.window.getSelection()
+  if (selection.toString().trim() === '') {
+    return
+  }
+  const range = selection.getRangeAt(0)
+  selection.removeAllRanges()
+  const txt = range ? range.toString().trim() : ''
+  if (!txt) {
+    return
+  }
+  const rect = range.getBoundingClientRect()
+  const [left, top] = calcRectPosition(rect)
+  const exist = markList.findIndex((item) => item.cfi === cfiRange) >= 0
+  if (exist) {
+    console.log(`cursorWord ${cfiRange.toString()} already exist`)
+    showMarkTool(true, left, top)
+    return
+  }
+  const ctx = getSentenceOfWord(range.commonAncestorContainer.data, range.startOffset, range.endOffset)
+  DB.putBookmark({
+    bookHash,
+    cfi: cfiRange,
+    content: txt,
+    ctx: ctx
+  })
+    .then((data) => {
+      if (!data) return
+      rendition.annotations.highlight(cfiRange, {})
+      return markList.push(data)
+    })
+    .then(() => {
+      clickHighLightCfi = cfiRange
+      showMarkTool(true, left, top)
+    })
+    .catch((err) => console.error('highlight', cfiRange, err))
+}
+
+function calcRectPosition(rect) {
+  let left = rect.left + rect.width / 2
+  const pageWith = window.document.body.clientWidth
+  const near = Math.floor(left / pageWith)
+  left = left - pageWith * near
+  const top = rect.top + rect.height / 2
+  return [left, top]
 }
 
 function showMarkTool(isShow = false, left = 0, top = 0) {
@@ -590,60 +629,26 @@ function onProgress(location) {
     .catch((e) => console.error('putBookCfi', bookHash, e))
 }
 
-function getSelectCtx(txt, startOffset, endOffset) {
+function getSentenceOfWord(txt, startOffset, endOffset) {
   let ctxStart = 0
   let ctxEnd = txt.length
-  const alphabet = [..."abcdefghijklmnopqrstuvwxyz-—'’ 0123456789"]
+  const punctuationMark = [...'.,;:?!()']
   for (let i = startOffset; i >= 0; i--) {
     const letter = txt[i].toLowerCase()
-    if (alphabet.indexOf(letter) < 0) {
+    if (punctuationMark.indexOf(letter) >= 0) {
       ctxStart = i
       break
     }
   }
   for (let i = endOffset; i < txt.length; i++) {
     const letter = txt[i].toLowerCase()
-    if (alphabet.indexOf(letter) < 0) {
+    if (punctuationMark.indexOf(letter) >= 0) {
       ctxEnd = i + 1
       break
     }
   }
   ctxStart > 0 ? ctxStart++ : null
   return txt.substring(ctxStart, ctxEnd).trim()
-}
-function highlightSelected(cfiRange, contents) {
-  const selection = contents.window.getSelection()
-  if (selection.toString().trim() === '') {
-    return
-  }
-  const range = selection.getRangeAt(0)
-  selection.removeAllRanges()
-  const txt = range ? range.toString().trim() : ''
-  if (!txt) {
-    return
-  }
-  const exist = markList.filter((item) => {
-    return item.cfi == cfiRange && item.content == txt
-  })
-  if (exist.length) {
-    return
-  }
-  const ctx = getSelectCtx(range.commonAncestorContainer.data, range.startOffset, range.endOffset)
-  DB.putBookmark({
-    bookHash,
-    cfi: cfiRange,
-    content: txt,
-    ctx: ctx
-  })
-    .then((data) => {
-      if (!data) return
-      rendition.annotations.highlight(cfiRange, {})
-      return markList.push(data)
-    })
-    .then(() => {
-      clickHighLightCfi = cfiRange
-    })
-    .catch((err) => console.error('highlight', cfiRange, err))
 }
 function onKeyUp(e) {
   if ((e.keyCode || e.which) == 37) {
