@@ -161,6 +161,7 @@ import { useRouter } from 'vue-router'
 import { lookup, generateHtml } from '../db/translate.js'
 import { ebus, ename } from '../stores/events.js'
 import { copyToClipboard } from '@/stores/copyToClipboard.js'
+import { showLoadingToast } from 'vant'
 
 let ebook
 let rendition
@@ -259,8 +260,8 @@ const markActions = [
 let cfiBeforShowTheme = ''
 let bookHash
 let router
-let HookIframeView
-async function renderBook() {
+let loadingCtrl
+async function renderBook(registed) {
   const res = await DB.getBookContent(bookHash)
   if (!res || !res.content) {
     console.error('getBookContent', res)
@@ -291,7 +292,6 @@ async function renderBook() {
   )
   let bookClickHandler
   rendition.hooks.render.register((iframeView) => {
-    HookIframeView = iframeView
     preventBookDefaultEvent(iframeView.document)
     iframeView.document.removeEventListener('click', showClickedImg)
     iframeView.document.addEventListener('click', showClickedImg)
@@ -299,13 +299,15 @@ async function renderBook() {
     bookClickHandler && iframeView.document.removeEventListener('click', bookClickHandler)
     bookClickHandler = (evt) => {
       hideAllTools()
-      isHighlightWhenClick.value && selectCursorWord(evt, HookIframeView)
+      isHighlightWhenClick.value && selectCursorWord(evt, iframeView)
       // this will emit the event 'selected' of rendition，see how function highlightSelected works
     }
     iframeView.document.addEventListener('click', bookClickHandler)
 
     iframeView.document.removeEventListener('touchmove', hideAllTools)
     iframeView.document.addEventListener('touchmove', hideAllTools)
+
+    registed && registed()
   })
 
   const cfi = await DB.getBookCfi(bookHash)
@@ -336,6 +338,7 @@ function switchHighlightOnClick(val) {
   localStorage.setItem('isHighlightWhenClick', val)
 }
 function selectCursorWord(evt, HookIframeView) {
+  console.log('selectCursorWord')
   const window = HookIframeView.window
   const document = HookIframeView.document
   const x = evt.clientX
@@ -348,6 +351,7 @@ function selectCursorWord(evt, HookIframeView) {
   sel && sel.removeAllRanges()
 
   if (document.caretPositionFromPoint) {
+    console.log('selectCursorWord caretPositionFromPoint')
     const pos = document.caretPositionFromPoint(x, y)
     if (!pos) {
       return
@@ -356,14 +360,18 @@ function selectCursorWord(evt, HookIframeView) {
     offset = pos.offset
   } else if (document.caretRangeFromPoint) {
     const pos = document.caretRangeFromPoint(x, y)
+    console.log('selectCursorWord caretRangeFromPoint', x, y, pos)
     if (!pos) {
       return
     }
     offsetNode = pos.startContainer
     offset = pos.startOffset
   } else {
+    console.log('selectCursorWord return')
     return
   }
+
+  console.log('selectCursorWord off', 'nodeType=', offsetNode.nodeType, 'offset=', offset)
 
   if (offsetNode.nodeType !== Node.TEXT_NODE) {
     return
@@ -395,6 +403,7 @@ function selectCursorWord(evt, HookIframeView) {
 }
 
 function highlightSelected(cfiRange, contents) {
+  console.log('highlightSelected')
   const selection = contents.window.getSelection()
   if (selection.toString().trim() === '') {
     return
@@ -413,7 +422,11 @@ function highlightSelected(cfiRange, contents) {
     showMarkTool(true, left, top)
     return
   }
-  const ctx = getSentenceOfWord(range.commonAncestorContainer.data, range.startOffset, range.endOffset)
+  const ctx = getSentenceOfWord(
+    range.commonAncestorContainer.data,
+    range.startOffset,
+    range.endOffset
+  )
   DB.putBookmark({
     bookHash,
     cfi: cfiRange,
@@ -423,6 +436,7 @@ function highlightSelected(cfiRange, contents) {
     .then((data) => {
       if (!data) return
       rendition.annotations.highlight(cfiRange, {})
+      console.log('highlight', cfiRange)
       return markList.push(data)
     })
     .then(() => {
@@ -734,13 +748,21 @@ function showTool() {
   isShowTool.value ? showMarkTool(false) : null
 }
 onMounted(async () => {
+  loadingCtrl = showLoadingToast({
+    duration: 0,
+    message: '',
+    forbidClick: true,
+    loadingType: 'spinner'
+  })
   ebus.on(ename.NavMore, showTool)
   console.log('mount book')
   router = useRouter()
   const query = router.currentRoute.value.query
   bookHash = query.hash
   bookTitle.value = `《${query.title}》`
-  renderBook()
+  renderBook(() => {
+    loadingCtrl.close()
+  })
   DB.getBookPercentage(bookHash)
     .then(viewProgress)
     .catch((e) => console.error('mount getBookPercentage', bookHash, e))
