@@ -30,7 +30,12 @@
             :title="item.content"
             @click="goToChapter(item.cfi)"
           >
-            {{ item.ctx }}
+            <p
+              v-html="
+                item.ctx.replace(item.content, `<span class='underline'>${item.content}</span>`)
+              "
+            ></p>
+            <!-- {{ item.ctx }} -->
           </van-cell>
         </van-list>
       </van-popup>
@@ -104,6 +109,7 @@
       <div class="book-tool" v-if="isShowTool">
         <van-button
           square
+          block
           type="primary"
           icon="wap-nav"
           color="hsla(160, 100%, 37%, 1)"
@@ -112,11 +118,12 @@
         >
         <van-button
           square
+          block
           type="primary"
           icon="records-o"
           color="hsla(160, 100%, 37%, 1)"
           @click="viewMark"
-          >生词</van-button
+          >笔记</van-button
         >
         <van-button
           square
@@ -124,7 +131,7 @@
           icon="setting-o"
           color="hsla(160, 100%, 37%, 1)"
           @click="showThemeEditor"
-          >字体/风格</van-button
+          >风格</van-button
         >
         <div class="triangle"></div>
       </div>
@@ -310,7 +317,7 @@ async function renderBook() {
     })
   ebook.loaded.navigation.then(refreshBookNav)
   rendition.on('keyup', onKeyUp)
-  rendition.on('markClicked', onHighlightClick)
+  rendition.on('markClicked', onMarkClick)
   rendition.on('selected', (cfiRange, contents) => {
     highlightSelected(cfiRange, contents)
   })
@@ -461,7 +468,7 @@ function highlightHistory() {
 let isClickHighLight = false
 let clickHighLightCfi
 let clickHighLightRange
-function onHighlightClick(cfiRange) {
+function onMarkClick(cfiRange) {
   ebook.getRange(cfiRange).then((range) => {
     clickHighLightCfi = cfiRange
     clickHighLightRange = range
@@ -471,7 +478,7 @@ function onHighlightClick(cfiRange) {
   })
 }
 function posiMarkPopover(evt) {
-  // delay 100ms to make sure onHighlightClick done
+  // delay 100ms to make sure onMarkClick done
   const { offsetX, pageY } = evt
   setTimeout(() => {
     if (isClickHighLight && clickHighLightRange) {

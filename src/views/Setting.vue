@@ -23,13 +23,13 @@
           </van-uploader>
         </div>
       </van-collapse-item>
-      <van-collapse-item title="布局" name="2" icon="shop-o"> </van-collapse-item>
       <van-collapse-item title="安全" name="3" icon="shop-o">
         <div class="setting-item">
           <div>开发者模式 <van-switch v-model="devMode" @change="switchDevMode" /></div>
         </div>
       </van-collapse-item>
     </van-collapse>
+    <p class="copyright fix-footer">Copyright © 2025 DominicYuan1024</p>
   </div>
 </template>
 
@@ -155,6 +155,18 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.settings{
+  position: relative;
+}
+.copyright {
+  position: absolute;
+  font-size: 0.5rem;
+  opacity: 0.5;
+  bottom: 0;
+  width: 100%;
+  text-align: left;
+  padding-left: 1rem;
+}
 .setting-item {
   margin-left: 2rem;
 }

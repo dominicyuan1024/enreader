@@ -52,3 +52,7 @@
   color: transparent !important;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
 }
+
+.underline{
+  border-bottom: 1px solid;
+}

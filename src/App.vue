@@ -32,7 +32,6 @@
   <van-popup v-model:show="showMore" position="bottom">
     <div style="text-align: center; padding: 4rem 0">
       <h1>暂无更多</h1>
-      <h1>来日方长</h1>
       <h1>尽请期待</h1>
     </div>
   </van-popup>
@@ -56,7 +55,7 @@ const router = useRouter()
 const routePath = router.currentRoute
 watch(reactive(routePath), (to) => {
   if (to.path === '/book') {
-    showMoreBadge.value = 2
+    showMoreBadge.value = 3
   } else {
     showMoreBadge.value = 0
   }

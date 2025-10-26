@@ -1,14 +1,5 @@
 [
   {
-    "url": "dict/oxford9/oxford9.mdx",
-    "css": "dict/oxford9/oxford9.css",
-    "js": "dict/oxford9/oxford9.js",
-    "cover": "dict/oxford9/oxford9.jpg",
-    "hash": "df989ab89ea2af046744cd013a0faf6b",
-    "title": "牛津高阶英汉双解词典（第9版）",
-    "language": "English"
-  },
-  {
     "url": "dict/oxford10/oxford10.mdx",
     "css": "dict/oxford10/oxford10.css",
     "js": "dict/oxford10/oxford10.js",

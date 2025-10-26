@@ -16,14 +16,11 @@
       axis="y"
       @click="isEditing = !isEditing"
     />
-    <van-list
-      v-model:loading="loading"
-      :finished="finished"
-      finished-text="没有更多了"
-      @load="onLoad"
-    >
+    <van-list v-model:loading="loading" :finished="finished" @load="onLoad">
       <van-cell v-for="(item, idx) in noteList" :key="item.id" :title="item.content">
-        <p v-html="item.ctxHtml"></p>
+        <p
+          v-html="item.ctx.replace(item.content, `<span class='underline'>${item.content}</span>`)"
+        ></p>
         <template #label>
           {{ item.defEN }}
           <span class="mosaic" @click="(evt) => evt.target.classList.toggle('mosaic')">{{
@@ -55,12 +52,6 @@ function viewNote() {
     .then((data) => {
       if (typeof data.splice === 'function') {
         data.sort((pre, cur) => cur.utime - pre.utime)
-        data.forEach((item) => {
-          item.ctxHtml = item.ctx.replace(
-            ` ${item.content}`,
-            ` <span style="border-bottom:1px solid;">${item.content}</span>`
-          )
-        })
         noteList.splice(0, noteList.length + 1, ...data)
       }
     })
