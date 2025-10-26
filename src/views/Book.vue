@@ -162,7 +162,8 @@ import { lookup, generateHtml } from '../db/translate.js'
 import { ebus, ename } from '../stores/events.js'
 import { copyToClipboard } from '@/stores/copyToClipboard.js'
 import { showLoadingToast } from 'vant'
-
+import { showConfirmDialog } from 'vant'
+const router = useRouter()
 let ebook
 let rendition
 let navList = reactive([])
@@ -259,8 +260,8 @@ const markActions = [
 ]
 let cfiBeforShowTheme = ''
 let bookHash
-let router
 let loadingCtrl
+
 async function renderBook(registed) {
   const res = await DB.getBookContent(bookHash)
   if (!res || !res.content) {
@@ -298,9 +299,11 @@ async function renderBook(registed) {
 
     bookClickHandler && iframeView.document.removeEventListener('click', bookClickHandler)
     bookClickHandler = (evt) => {
+      if (isHighlightWhenClick.value && !isShowTool.value) {
+        selectCursorWord(evt, iframeView)
+        // this will emit the event 'selected' of rendition，see how function highlightSelected works
+      }
       hideAllTools()
-      isHighlightWhenClick.value && selectCursorWord(evt, iframeView)
-      // this will emit the event 'selected' of rendition，see how function highlightSelected works
     }
     iframeView.document.addEventListener('click', bookClickHandler)
 
@@ -576,7 +579,12 @@ function handleTranslate() {
     .then((txt) => {
       let dictHash = localStorage.getItem('dict-using-hash')
       if (!dictHash) {
-        alert('尚未安装词典，请前往【设置】下载安装')
+        showConfirmDialog({
+          message: '无可用词典，是否跳转至安装页面？'
+        }).then(() => {
+          router.push('/setting')
+        })
+        return
       }
       return lookup(dictHash, txt)
     })
@@ -755,8 +763,6 @@ onMounted(async () => {
     loadingType: 'spinner'
   })
   ebus.on(ename.NavMore, showTool)
-  console.log('mount book')
-  router = useRouter()
   const query = router.currentRoute.value.query
   bookHash = query.hash
   bookTitle.value = `《${query.title}》`

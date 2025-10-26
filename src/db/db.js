@@ -65,6 +65,13 @@ function getDictMeta(hash) {
 function listDictMeta() {
   return db.dictMeta.orderBy('id').toArray()
 }
+async function deleteDict(hash) {
+  if (!validateMd5(hash)) {
+    return error('invalid hash')
+  }
+  await db.bookContent.where({ hash }).delete()
+  await db.dictMeta.where({ hash }).delete()
+}
 async function getRemoteDictInfo(hash) {
   const remoteDict = await axios.get('dict/default-dict-list.json')
   const dictInfo = remoteDict.data.filter((item) => item.hash === hash)
@@ -243,6 +250,7 @@ export default {
   putDictMeta,
   getDictMeta,
   listDictMeta,
+  deleteDict,
   registRemoteDict,
   getRemoteDictInfo
 }

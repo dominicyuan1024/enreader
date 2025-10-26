@@ -18,14 +18,17 @@
               <van-radio v-else :name="item.hash"></van-radio>
             </div>
           </van-radio-group>
-          <van-uploader class="dict-item" :after-read="uploadFileList" accept="*.mdx" multiple>
+          <!-- <van-uploader class="dict-item" :after-read="uploadFileList" accept="*.mdx" multiple>
             <van-button type="primary" icon="plus" size="small">本地导入</van-button>
-          </van-uploader>
+          </van-uploader> -->
         </div>
       </van-collapse-item>
       <van-collapse-item title="安全" name="safty" icon="shop-o">
         <div class="setting-item">
-          <div class="devmode"><span class="label">开发者模式</span> <van-switch v-model="devMode" @change="switchDevMode" /></div>
+          <div class="devmode">
+            <span class="label">开发者模式</span>
+            <van-switch v-model="devMode" @change="switchDevMode" />
+          </div>
         </div>
       </van-collapse-item>
     </van-collapse>
@@ -38,12 +41,15 @@ import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
 import axios from 'axios'
 import VConsole from 'vconsole'
-const activeNames = ref(['dict','safty'])
-const devMode = ref(localStorage.getItem('devMode') === 'true' ? true : false)
+const nameDictUsingHash = 'dict-using-hash'
+const activeNames = ref(['dict', 'safty'])
+const devMode = ref(false)
 function switchDevMode(val) {
   localStorage.setItem('devMode', val)
-  if (val && !window.vconsole) {
-    window.vconsole = new VConsole({ theme: 'dark' })
+  if (val) {
+    if (!window.vconsole) {
+      window.vconsole = new VConsole({ theme: 'dark' })
+    }
   } else if (window.vconsole) {
     window.vconsole.destroy()
     window.vconsole = undefined
@@ -51,7 +57,7 @@ function switchDevMode(val) {
 }
 // import {showLoadingToast} from "vant"
 // let loadingCtrl
-const dictChecked = ref(localStorage.getItem('dict-using-hash') || '')
+const dictChecked = ref(localStorage.getItem(nameDictUsingHash) || '')
 let dictList = reactive([])
 async function uploadFileList(file) {
   console.log('filefilefilefilefilefile', file)
@@ -108,7 +114,7 @@ async function uploadFileList(file) {
   // loadingCtrl.close()
 }
 function usingDict(data) {
-  localStorage.setItem('dict-using-hash', data)
+  localStorage.setItem(nameDictUsingHash, data)
 }
 function downloadDict(dict) {
   dict.loading = true
@@ -163,11 +169,11 @@ onMounted(async () => {
 .setting-item {
   margin-left: 2rem;
 }
-.devmode{
+.devmode {
   display: flex;
   align-items: center;
 }
-.label{
+.label {
   display: flex;
   align-items: center;
   margin-right: 1rem;
