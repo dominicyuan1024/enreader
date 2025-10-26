@@ -289,15 +289,17 @@ async function renderBook() {
   rendition.on('rendered', () =>
     rendition.views().forEach((view) => (view.pane ? view.pane.render() : null))
   )
+  let bookClickHandler
   rendition.hooks.render.register((iframeView) => {
     HookIframeView = iframeView
     preventBookDefaultEvent(iframeView.document)
-    iframeView.document.removeEventListener('click', posiMarkPopover)
-    iframeView.document.addEventListener('click', posiMarkPopover)
     iframeView.document.removeEventListener('click', showClickedImg)
     iframeView.document.addEventListener('click', showClickedImg)
-    // iframeView.document.removeEventListener('click', selectCursorWord(HookIframeView))
-    iframeView.document.addEventListener('click', selectCursorWord(HookIframeView))
+
+    bookClickHandler && iframeView.document.removeEventListener('click', bookClickHandler)
+    bookClickHandler = selectCursorWord(HookIframeView)
+    iframeView.document.addEventListener('click', bookClickHandler)
+
     iframeView.document.removeEventListener('touchmove', hideAllTools)
     iframeView.document.addEventListener('touchmove', hideAllTools)
   })
@@ -332,15 +334,16 @@ function switchHighlightOnClick(val) {
   localStorage.setItem('isHighlightWhenClick', val)
 }
 function selectCursorWord(HookIframeView) {
-  return (e) => {
+  return (evt) => {
+    showMarkTool(false)
     if (!isHighlightWhenClick.value) {
       return
     }
     if (!HookIframeView || isShowTool.value || isShowMarktool.value) return
     const window = HookIframeView.window
     const document = HookIframeView.document
-    const x = e.clientX
-    const y = e.clientY
+    const x = evt.clientX
+    const y = evt.clientY
 
     let offsetNode
     let offset
@@ -385,6 +388,9 @@ function selectCursorWord(HookIframeView) {
       const { left, right, top, bottom } = rangeRect
       const isIn = left <= x && right >= x && top <= y && bottom >= y
       if (!isIn) return
+
+      showMarkTool(true, evt.offsetX, evt.pageY)
+
       const cfiRange = HookIframeView.contents.cfiFromRange(range)
       if (markList.findIndex((item) => item.cfi === cfiRange) >= 0) {
         console.log(`cursorWord="${range.toString()}" ${cfiRange} already exist`)
@@ -465,33 +471,10 @@ function highlightHistory() {
     })
     .catch((err) => console.error('highlightHistoryMark listBookmark', err))
 }
-let isClickHighLight = false
+
 let clickHighLightCfi
-let clickHighLightRange
 function onMarkClick(cfiRange) {
-  ebook.getRange(cfiRange).then((range) => {
-    clickHighLightCfi = cfiRange
-    clickHighLightRange = range
-    if (range) {
-      isClickHighLight = true
-    }
-  })
-}
-function posiMarkPopover(evt) {
-  // delay 100ms to make sure onMarkClick done
-  const { offsetX, pageY } = evt
-  setTimeout(() => {
-    if (isClickHighLight && clickHighLightRange) {
-      isClickHighLight = false
-      showMarkTool(true, offsetX, pageY)
-    } else {
-      showMarkTool(false)
-      isClickHighLight = false
-      clickHighLightRange = undefined
-      clickHighLightCfi = undefined
-    }
-    isShowTool.value = false
-  }, 200)
+  clickHighLightCfi = cfiRange
 }
 
 function clearHighlight(item, evt) {
@@ -556,7 +539,12 @@ function handleTranslate() {
 }
 
 function handleCopy() {
-  copyToClipboard(clickHighLightRange.toString())
+  ebook
+    .getRange(clickHighLightCfi)
+    .then((range) => {
+      copyToClipboard(range.toString())
+    })
+
     .then(() => {
       showMarkTool(false)
     })
@@ -653,18 +641,7 @@ function highlightSelected(cfiRange, contents) {
       return markList.push(data)
     })
     .then(() => {
-      const position = range.getBoundingClientRect()
       clickHighLightCfi = cfiRange
-      clickHighLightRange = range
-      if (range) {
-        isClickHighLight = true
-      }
-      let left = position.left + position.width / 2
-      const pageWith = window.document.body.clientWidth
-      const near = Math.floor(left / pageWith)
-      left = left - pageWith * near
-      const top = position.top + position.height / 2
-      showMarkTool(true, left, top)
     })
     .catch((err) => console.error('highlight', cfiRange, err))
 }
