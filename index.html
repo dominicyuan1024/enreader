@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="./en.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>enreader 伊恩阅读</title>
+    <script type="module" crossorigin src="./assets/index-BPEPzOfF.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-stc8BIT6.css">
+  </head>
+  <body>
+    <script>
+      window.addEventListener(`beforeinstallprompt`, (e) => {
+        e.preventDefault()
+        window.deferredPrompt = e
+        console.log('deferredPrompt registed')
+      })
+    </script>
+    <div id="app"></div>
+  </body>
+</html>
