@@ -1,6 +1,6 @@
 <template>
   <div class="settings fix-footer fix-header">
-    <h3 class="page-header">我的</h3>
+    <h3 class="page-header"><van-icon name="user-o" style="" />用户设置</h3>
     <van-collapse v-model="activeNames">
       <van-collapse-item name="dict" title="词典" icon="shop-o">
         <div class="setting-item">

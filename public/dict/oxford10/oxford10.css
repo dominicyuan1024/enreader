@@ -2483,7 +2483,7 @@ chn.selfshow * {
   border: 1px solid rgb(0, 189, 126);
   border-radius: 5px;
   display: inline-block;
-  content: 'record';
+  content: '写入笔记';
 }
 #selftool::after {
   content: '';
