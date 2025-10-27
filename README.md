@@ -1,4 +1,4 @@
-# enreader 伊恩阅读
+# enreader 伊恩阅读器
 
 一款英文原著阅读器，便于阅读、翻译与记录生词  
 https://dominicyuan1024.github.io/enreader/
