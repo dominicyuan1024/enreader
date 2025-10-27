@@ -9,45 +9,46 @@ https://dominicyuan1024.github.io/enreader/
 暂不支持其他格式书籍文件，后续会陆续支持
 
 ## ✔书架
+
 - 导入书籍  
-  <img src="docs/书架.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />  
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/书架.jpg" width="250px" /></div>  
 - 删除书籍  
-  <img src="docs/书架删除.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;">
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/书架删除.jpg" width="250px"></div>  
 
 ## ✔阅读
 
 - 看书  
-  <img src="docs/阅读工具.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/阅读工具.jpg" width="250px" /></div>  
 - 目录  
-  <img src="docs/目录.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/目录.jpg" width="250px" /></div>  
 - 漫画  
-  <img src="docs/漫画.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/漫画.jpg" width="250px" /></div>  
 
 ## ✔生词本
 
 - 可点选标记书中单词  
-  <img src="docs/高亮选中.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/高亮选中.jpg" width="250px" /></div>  
 
 - 选中单词自动加入笔记并记录句子  
-  <img src="docs/笔记2.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/笔记2.jpg" width="250px" /></div>  
 
 ## ✔翻译
 
 - 离线词典 《牛津高阶英汉双解词典（第10版）》  
-  <img src="docs/词典.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/词典.jpg" width="250px" /></div>  
 
-- 默认使用马赛克隐藏中文，沉浸于英文阅读，可点击查看中文    
-  <img src="docs/翻译2.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+- 默认使用马赛克隐藏中文，沉浸于英文阅读，可点击查看中文  
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/翻译2.jpg" width="250px" /></div>  
 
 ## ✔主题设置
 
-- 字体大小、配色    
-  <img src="docs/风格设置.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+- 字体大小、配色  
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/风格设置.jpg" width="250px" /></div>  
 
 ## ✔打卡分享
 
 - 词云  
-  <img src="docs/词云分享.jpg" width="250px" style="border: 3px solid #888;border-radius: 10px;" />
+  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/词云分享.jpg" width="250px" /></div>  
 
 ## ✔存储
 
@@ -83,4 +84,5 @@ npm run build
 ```
 
 ## Thanks
+
 [mdict-js](https://github.com/fengdh/mdict-js/)
