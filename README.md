@@ -10,45 +10,41 @@ https://dominicyuan1024.github.io/enreader/
 
 ## ✔书架
 
-- 导入书籍  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/书架.jpg" width="250px" /></div>  
-- 删除书籍  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/书架删除.jpg" width="250px"></div>  
+<img src="docs/bordered_书架.jpg" width="200px" />
+<img src="docs/bordered_书架删除.jpg" width="200px">
 
 ## ✔阅读
 
-- 看书  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/阅读工具.jpg" width="250px" /></div>  
-- 目录  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/目录.jpg" width="250px" /></div>  
-- 漫画  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/漫画.jpg" width="250px" /></div>  
+看书、漫画、目录  
+<img src="docs/bordered_阅读工具.jpg" width="200px" />
+<img src="docs/bordered_漫画.jpg" width="200px" />
+<img src="docs/bordered_目录.jpg" width="200px" />
 
 ## ✔生词本
 
 - 可点选标记书中单词  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/高亮选中.jpg" width="250px" /></div>  
+  <img src="docs/bordered_高亮选中.jpg" width="200px" />
 
 - 选中单词自动加入笔记并记录句子  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/笔记2.jpg" width="250px" /></div>  
+  <img src="docs/bordered_笔记2.jpg" width="200px" />
 
 ## ✔翻译
 
 - 离线词典 《牛津高阶英汉双解词典（第10版）》  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/词典.jpg" width="250px" /></div>  
+  <img src="docs/bordered_词典.jpg" width="200px" />
 
 - 默认使用马赛克隐藏中文，沉浸于英文阅读，可点击查看中文  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/翻译2.jpg" width="250px" /></div>  
+  <img src="docs/bordered_翻译2.jpg" width="200px" />
 
 ## ✔主题设置
 
 - 字体大小、配色  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/风格设置.jpg" width="250px" /></div>  
+  <img src="docs/bordered_风格设置.jpg" width="200px" />
 
 ## ✔打卡分享
 
 - 词云  
-  <div style="display:inline-block;border: 4px solid #888;border-radius: 5px;"><img src="docs/词云分享.jpg" width="250px" /></div>  
+  <img src="docs/bordered_词云分享.jpg" width="200px" />
 
 ## ✔存储
 
