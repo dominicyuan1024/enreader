@@ -5,7 +5,7 @@ import Setting from '../views/Setting.vue'
 import Note from '../views/Note.vue'
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',

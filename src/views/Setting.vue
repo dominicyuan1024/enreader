@@ -128,16 +128,20 @@ function downloadDict(dict) {
     })
 }
 onMounted(async () => {
-  let res
-  let remoteList
+  let res = []
   try {
     res = await DB.listDictMeta()
-    remoteList = await DB.getRemoteDictList()
   } catch (error) {
     console.error('listDictMeta', error)
   }
-
   dictList.splice(0, dictList.length, ...res)
+
+  let remoteList = {}
+  try {
+    remoteList = await DB.getRemoteDictList()
+  } catch (error) {
+    console.error('getRemoteDictList', error)
+  }
   const dictMap = {}
   dictList.forEach((item) => (dictMap[item.hash] = true))
   remoteList.data.forEach((item) => {
