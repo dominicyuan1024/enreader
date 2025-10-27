@@ -73,12 +73,28 @@ async function deleteDict(hash) {
   await db.dictMeta.where({ hash }).delete()
 }
 async function getRemoteDictInfo(hash) {
-  const remoteDict = await axios.get('dict/default-dict-list.json')
+  const remoteDict = await getRemoteDictList()
   const dictInfo = remoteDict.data.filter((item) => item.hash === hash)
   if (!dictInfo.length) {
     throw new Error(`getRemoteDictInfo ${hash} notfound`)
   }
   return dictInfo[0]
+}
+
+async function getRemoteDictList() {
+  return {
+    data: [
+      {
+        url: 'dict/oxford10/oxford10.mdx',
+        css: 'dict/oxford10/oxford10.css',
+        js: 'dict/oxford10/oxford10.js',
+        hash: '46c02f4e72a198adaa6d3c72f20e121b',
+        title: '牛津高阶英汉双解词典（第10版）',
+        cover: '',
+        language: 'English'
+      }
+    ]
+  }
 }
 
 async function registRemoteDict(hash) {
@@ -252,5 +268,6 @@ export default {
   listDictMeta,
   deleteDict,
   registRemoteDict,
-  getRemoteDictInfo
+  getRemoteDictInfo,
+  getRemoteDictList
 }

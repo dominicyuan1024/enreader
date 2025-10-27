@@ -39,7 +39,6 @@
 import { ref, reactive, onMounted } from 'vue'
 import Md5 from 'blueimp-md5'
 import DB from '../db/db.js'
-import axios from 'axios'
 import VConsole from 'vconsole'
 const nameDictUsingHash = 'dict-using-hash'
 const activeNames = ref(['dict', 'safty'])
@@ -129,36 +128,25 @@ function downloadDict(dict) {
     })
 }
 onMounted(async () => {
-  if (devMode.value && !window.vconsole) {
-    window.vconsole = new VConsole({ theme: 'dark' })
+  let res
+  let remoteList
+  try {
+    res = await DB.listDictMeta()
+    remoteList = await DB.getRemoteDictList()
+  } catch (error) {
+    console.error('listDictMeta', error)
   }
-  DB.listDictMeta()
-    .then((res) => {
-      dictList.splice(0, dictList.length, ...res)
-    })
-    .then(() => {
-      return axios.get('dict/default-dict-list.json')
-    })
-    .then((res) => {
-      if (res.status !== 200) {
-        return Promise.reject(`query dict/default-dict-list.json ${res.status}`)
-      }
-      return res
-    })
-    .then((res) => {
-      const dictMap = {}
-      dictList.forEach((item) => (dictMap[item.hash] = true))
-      res.data.forEach((item) => {
-        if (dictMap[item.hash]) {
-          return
-        }
-        const { hash, title } = item
-        dictList.push({ hash, title, remote: true })
-      })
-    })
-    .catch((err) => {
-      console.error('listDictMeta', err)
-    })
+
+  dictList.splice(0, dictList.length, ...res)
+  const dictMap = {}
+  dictList.forEach((item) => (dictMap[item.hash] = true))
+  remoteList.data.forEach((item) => {
+    if (dictMap[item.hash]) {
+      return
+    }
+    const { hash, title } = item
+    dictList.push({ hash, title, remote: true })
+  })
 })
 </script>
 
