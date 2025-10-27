@@ -9,37 +9,37 @@ https://dominicyuan1024.github.io/enreader/
 暂不支持其他格式书籍文件，后续会陆续支持
 
 ## ✔书架
-<img src="docs/书架.jpg" style="max-width: 250px" />
-<img src="docs/书架删除.jpg" style="max-width: 250px">
+<img src="docs/书架.jpg" width="250px" />
+<img src="docs/书架删除.jpg" width="250px">
 
 ## ✔阅读
 
-<img src="docs/阅读工具.jpg" style="max-width: 250px" />
-<img src="docs/目录.jpg" style="max-width: 250px" />
-<img src="docs/漫画.jpg" style="max-width: 250px" />
+<img src="docs/阅读工具.jpg" width="250px" />
+<img src="docs/目录.jpg" width="250px" />
+<img src="docs/漫画.jpg" width="250px" />
 
 ## ✔生词本
 
 可点选标记书中单词，自动加入生词本，自动记录单词所在句子  
-<img src="docs/高亮选中.jpg" style="max-width: 250px" />
-<img src="docs/笔记2.jpg" style="max-width: 250px" />
+<img src="docs/高亮选中.jpg" width="250px" />
+<img src="docs/笔记2.jpg" width="250px" />
 
 ## ✔翻译
 
 离线词典 《牛津高阶英汉双解词典（第10版）》
 默认隐藏中文，沉浸阅读  
-<img src="docs/翻译2.jpg" style="max-width: 250px" />
-<img src="docs/词典.jpg" style="max-width: 250px" />
+<img src="docs/翻译2.jpg" width="250px" />
+<img src="docs/词典.jpg" width="250px" />
 
 ## ✔主题设置
 
 字体大小  
 配色  
-<img src="docs/风格设置.jpg" style="max-width: 250px" />
+<img src="docs/风格设置.jpg" width="250px" />
 
 ## ✔打卡分享：生词云图
 
-<img src="docs/词云分享.jpg" style="max-width: 250px" />
+<img src="docs/词云分享.jpg" width="250px" />
 
 ## ✔存储
 
