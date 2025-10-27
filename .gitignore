@@ -36,3 +36,4 @@ tests_output/
 dev-dist
 # *.mdx
 *.mdd
+.vite
