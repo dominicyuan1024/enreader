@@ -53,7 +53,6 @@ https://dominicyuan1024.github.io/enreader/
 ## Todo
 
 - 支持 pdf 格式
-- 支持单词分级（初中 高中 四级 六级 雅思 托福）
 - 根据笔记自动估算词汇量水平
 - 单词发音
 - 句子朗读

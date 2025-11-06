@@ -341,7 +341,6 @@ function switchHighlightOnClick(val) {
   localStorage.setItem('isHighlightWhenClick', val)
 }
 function selectCursorWord(evt, HookIframeView) {
-  console.log('selectCursorWord')
   const window = HookIframeView.window
   const document = HookIframeView.document
   const x = evt.clientX
@@ -354,7 +353,6 @@ function selectCursorWord(evt, HookIframeView) {
   sel && sel.removeAllRanges()
 
   if (document.caretPositionFromPoint) {
-    console.log('selectCursorWord caretPositionFromPoint')
     const pos = document.caretPositionFromPoint(x, y)
     if (!pos) {
       return
@@ -363,18 +361,15 @@ function selectCursorWord(evt, HookIframeView) {
     offset = pos.offset
   } else if (document.caretRangeFromPoint) {
     const pos = document.caretRangeFromPoint(x, y)
-    console.log('selectCursorWord caretRangeFromPoint', x, y, pos)
     if (!pos) {
       return
     }
     offsetNode = pos.startContainer
     offset = pos.startOffset
   } else {
-    console.log('selectCursorWord return')
     return
   }
 
-  console.log('selectCursorWord off', 'nodeType=', offsetNode.nodeType, 'offset=', offset)
 
   if (offsetNode.nodeType !== Node.TEXT_NODE) {
     return
